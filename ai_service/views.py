@@ -466,7 +466,230 @@ class IndustryInsightsView(APIView):
             )
 
 
+class ConversationHistoryView(APIView):
+    """Enhanced API endpoint to retrieve conversation analysis history"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get conversation analysis history for the current user with enhanced formatting"""
+        try:
+            # Get query parameters
+            limit = int(request.query_params.get('limit', 10))
+            offset = int(request.query_params.get('offset', 0))
+            
+            analyses = ConversationAnalysis.objects.filter(
+                user=request.user
+            ).order_by('-analysis_timestamp')[offset:offset + limit]
+            
+            history = []
+            for analysis in analyses:
+                extracted_data = analysis.extracted_data
+                lead_info = extracted_data.get('lead_info', {})
+                
+                history.append({
+                    "id": str(analysis.id),
+                    "timestamp": analysis.analysis_timestamp.isoformat(),
+                    "conversation_preview": (
+                        analysis.conversation_text[:100] + "..." 
+                        if len(analysis.conversation_text) > 100 
+                        else analysis.conversation_text
+                    ),
+                    "company_name": lead_info.get('company_name'),
+                    "contact_name": lead_info.get('contact_details', {}).get('name'),
+                    "confidence_score": lead_info.get('extraction_metadata', {}).get('confidence_score', 0),
+                    "data_completeness": lead_info.get('extraction_metadata', {}).get('data_completeness', 0),
+                    "has_recommendations": bool(extracted_data.get('recommendations')),
+                    "validation_status": extracted_data.get('validation', {}).get('is_valid', False)
+                })
+            
+            return Response({
+                "success": True,
+                "history": history,
+                "count": len(history),
+                "pagination": {
+                    "limit": limit,
+                    "offset": offset,
+                    "has_more": len(analyses) == limit
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving conversation history: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to retrieve history: {str(e)}",
+                    "error_code": "HISTORY_RETRIEVAL_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 @method_decorator(csrf_exempt, name='dispatch')
+class LeadQualityScoreView(APIView):
+    """API endpoint for calculating lead quality score"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Calculate comprehensive lead quality score
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information to analyze
+            }
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            ai_service = GeminiAIService()
+            quality_score = ai_service.calculate_lead_quality_score(lead_data)
+            
+            # Add timestamp
+            quality_score['validation_metadata']['last_calculated'] = timezone.now().isoformat()
+            
+            return Response({
+                "success": True,
+                "quality_score": quality_score,
+                "calculated_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error calculating lead quality score: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to calculate lead quality score: {str(e)}",
+                    "error_code": "QUALITY_SCORE_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SalesStrategyView(APIView):
+    """API endpoint for generating sales strategy recommendations"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Generate tailored sales strategy recommendations
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information
+            },
+            "quality_score": {
+                // Optional pre-calculated quality score
+            }
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            quality_score = request.data.get('quality_score')
+            
+            ai_service = GeminiAIService()
+            sales_strategy = ai_service.generate_sales_strategy(lead_data, quality_score)
+            
+            # Add timestamp
+            sales_strategy['strategy_metadata']['last_generated'] = timezone.now().isoformat()
+            
+            return Response({
+                "success": True,
+                "sales_strategy": sales_strategy,
+                "generated_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error generating sales strategy: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to generate sales strategy: {str(e)}",
+                    "error_code": "SALES_STRATEGY_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class IndustryInsightsView(APIView):
+    """API endpoint for generating industry-specific insights"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Generate industry-specific insights and best practices
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information with industry context
+            }
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            ai_service = GeminiAIService()
+            industry_insights = ai_service.generate_industry_insights(lead_data)
+            
+            # Add timestamp
+            industry_insights['insights_metadata']['last_generated'] = timezone.now().isoformat()
+            
+            return Response({
+                "success": True,
+                "industry_insights": industry_insights,
+                "generated_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error generating industry insights: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to generate industry insights: {str(e)}",
+                    "error_code": "INDUSTRY_INSIGHTS_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+@m
+ethod_decorator(csrf_exempt, name='dispatch')
 class ComprehensiveRecommendationsView(APIView):
     """API endpoint for generating comprehensive sales recommendations with all components"""
     
@@ -665,66 +888,6 @@ class NextStepsRecommendationsView(APIView):
                     "success": False,
                     "error": f"Failed to generate next steps: {str(e)}",
                     "error_code": "NEXT_STEPS_FAILED"
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class ConversationHistoryView(APIView):
-    """Enhanced API endpoint to retrieve conversation analysis history"""
-    
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        """Get conversation analysis history for the current user with enhanced formatting"""
-        try:
-            # Get query parameters
-            limit = int(request.query_params.get('limit', 10))
-            offset = int(request.query_params.get('offset', 0))
-            
-            analyses = ConversationAnalysis.objects.filter(
-                user=request.user
-            ).order_by('-analysis_timestamp')[offset:offset + limit]
-            
-            history = []
-            for analysis in analyses:
-                extracted_data = analysis.extracted_data
-                lead_info = extracted_data.get('lead_info', {})
-                
-                history.append({
-                    "id": str(analysis.id),
-                    "timestamp": analysis.analysis_timestamp.isoformat(),
-                    "conversation_preview": (
-                        analysis.conversation_text[:100] + "..." 
-                        if len(analysis.conversation_text) > 100 
-                        else analysis.conversation_text
-                    ),
-                    "company_name": lead_info.get('company_name'),
-                    "contact_name": lead_info.get('contact_details', {}).get('name'),
-                    "confidence_score": lead_info.get('extraction_metadata', {}).get('confidence_score', 0),
-                    "data_completeness": lead_info.get('extraction_metadata', {}).get('data_completeness', 0),
-                    "has_recommendations": bool(extracted_data.get('recommendations')),
-                    "validation_status": extracted_data.get('validation', {}).get('is_valid', False)
-                })
-            
-            return Response({
-                "success": True,
-                "history": history,
-                "count": len(history),
-                "pagination": {
-                    "limit": limit,
-                    "offset": offset,
-                    "has_more": len(analyses) == limit
-                }
-            }, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            logger.error(f"Error retrieving conversation history: {e}", exc_info=True)
-            return Response(
-                {
-                    "success": False,
-                    "error": f"Failed to retrieve history: {str(e)}",
-                    "error_code": "HISTORY_RETRIEVAL_FAILED"
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
