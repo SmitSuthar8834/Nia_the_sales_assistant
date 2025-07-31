@@ -1,9 +1,18 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
 app_name = 'ai_service'
 
+# Create router for ViewSets
+router = DefaultRouter()
+router.register(r'leads', views.LeadViewSet, basename='lead')
+
 urlpatterns = [
+    # Lead management endpoints (Task 4)
+    path('', include(router.urls)),
+    path('analytics/', views.LeadAnalyticsView.as_view(), name='lead_analytics'),
+    
     # Main analysis endpoint
     path('analyze/', views.AnalyzeConversationView.as_view(), name='analyze_conversation'),
     
@@ -21,5 +30,6 @@ urlpatterns = [
     
     # Utility endpoints
     path('test-connection/', views.TestGeminiConnectionView.as_view(), name='test_connection'),
+    path('quota-status/', views.GeminiQuotaStatusView.as_view(), name='quota_status'),
     path('history/', views.ConversationHistoryView.as_view(), name='conversation_history'),
 ]

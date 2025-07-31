@@ -146,6 +146,13 @@ REST_FRAMEWORK = {
 
 # Gemini AI Configuration
 GEMINI_API_KEY = config('GEMINI_API_KEY')
+GEMINI_API_KEY_BACKUP = config('GEMINI_API_KEY_BACKUP', default='')
+GEMINI_API_KEYS = config('GEMINI_API_KEYS', default='').split(',') if config('GEMINI_API_KEYS', default='') else [GEMINI_API_KEY]
+
+# Gemini API Quota Limits
+GEMINI_MINUTE_LIMIT = config('GEMINI_MINUTE_LIMIT', default=15, cast=int)
+GEMINI_DAILY_LIMIT = config('GEMINI_DAILY_LIMIT', default=1500, cast=int)
+GEMINI_TOKEN_MINUTE_LIMIT = config('GEMINI_TOKEN_MINUTE_LIMIT', default=1000000, cast=int)
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'

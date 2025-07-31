@@ -3,8 +3,10 @@ from django.conf import settings
 import json
 import logging
 import re
+import time
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from .quota_tracker import quota_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -116,10 +118,93 @@ class GeminiAIService:
     """Enhanced service class for interacting with Google Gemini AI"""
     
     def __init__(self):
-        """Initialize Gemini AI client with API key"""
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        """Initialize Gemini AI client with API key rotation support"""
+        self.api_keys = settings.GEMINI_API_KEYS
+        self.current_key_index = 0
+        self.model = None
         self.validator = DataValidator()
+        self._initialize_client()
+    
+    def _initialize_client(self):
+        """Initialize the Gemini client with the current API key"""
+        try:
+            current_key = self.api_keys[self.current_key_index]
+            genai.configure(api_key=current_key)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini client with key index {self.current_key_index}: {e}")
+            raise
+    
+    def _rotate_api_key(self):
+        """Rotate to the next API key if quota is exceeded"""
+        if len(self.api_keys) > 1:
+            self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+            logger.info(f"Rotating to API key index {self.current_key_index}")
+            self._initialize_client()
+            return True
+        return False
+    
+    def _make_api_call(self, prompt: str, max_retries: int = 2):
+        """Make API call with quota tracking and automatic key rotation"""
+        estimated_tokens = quota_tracker.estimate_tokens(prompt)
+        
+        for attempt in range(max_retries + 1):
+            try:
+                # Check quota before making request
+                quota_check = quota_tracker.can_make_request(estimated_tokens)
+                
+                if not quota_check['can_request']:
+                    logger.warning(f"Quota limit reached: {quota_check['reason']}")
+                    
+                    # Try rotating to next API key
+                    if self._rotate_api_key():
+                        logger.info(f"Rotated to new API key, retrying (attempt {attempt + 1})")
+                        continue
+                    else:
+                        # No more keys to try, check if we should wait
+                        wait_time = quota_check.get('wait_seconds', 60)
+                        if wait_time < 300 and attempt < max_retries:  # Only wait if less than 5 minutes
+                            logger.info(f"Waiting {wait_time} seconds for quota reset")
+                            time.sleep(wait_time)
+                            continue
+                        else:
+                            raise Exception(f"Quota exceeded: {quota_check['reason']}. Wait time: {wait_time} seconds")
+                
+                # Make the API call
+                response = self.model.generate_content(prompt)
+                
+                # Record successful request
+                actual_tokens = len(response.text) // 3 if hasattr(response, 'text') and response.text else estimated_tokens
+                quota_tracker.record_request(actual_tokens)
+                
+                return response
+                
+            except Exception as e:
+                error_msg = str(e).lower()
+                
+                # Check for quota-related errors
+                if 'quota' in error_msg or 'rate limit' in error_msg or 'resource_exhausted' in error_msg:
+                    logger.warning(f"API quota exceeded for key index {self.current_key_index}: {e}")
+                    
+                    # Try rotating API key
+                    if attempt < max_retries and self._rotate_api_key():
+                        logger.info(f"Retrying with new API key (attempt {attempt + 1})")
+                        continue
+                    else:
+                        logger.error("All API keys exhausted or max retries reached")
+                        raise Exception("All Gemini API keys have exceeded their quota limits")
+                else:
+                    # For other errors, retry with exponential backoff
+                    if attempt < max_retries:
+                        wait_time = 2 ** attempt
+                        logger.warning(f"API call failed (attempt {attempt + 1}), retrying in {wait_time} seconds: {e}")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"Non-quota API error: {e}")
+                        raise
+        
+        raise Exception("Max retries exceeded for API call")
     
     def extract_lead_info(self, conversation_text: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -138,7 +223,7 @@ class GeminiAIService:
         prompt = self._build_extraction_prompt(conversation_text, context)
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self._make_api_call(prompt)
             response_text = response.text.strip()
             
             # Clean and parse JSON response
@@ -297,7 +382,7 @@ class GeminiAIService:
         prompt = self._build_recommendations_prompt(lead_data, context_info)
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self._make_api_call(prompt)
             response_text = response.text.strip()
             
             # Clean up JSON formatting
@@ -357,7 +442,7 @@ class GeminiAIService:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self._make_api_call(prompt)
             response_text = response.text.strip()
             
             quality_data = self._parse_ai_response(response_text)
@@ -424,7 +509,7 @@ class GeminiAIService:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self._make_api_call(prompt)
             response_text = response.text.strip()
             
             strategy_data = self._parse_ai_response(response_text)
@@ -495,7 +580,7 @@ class GeminiAIService:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self._make_api_call(prompt)
             response_text = response.text.strip()
             
             insights_data = self._parse_ai_response(response_text)
@@ -805,11 +890,12 @@ class GeminiAIService:
             dict: Connection test results
         """
         try:
-            response = self.model.generate_content("Hello, this is a test message. Please respond with 'Connection successful'.")
+            response = self._make_api_call("Hello, this is a test message. Please respond with 'Connection successful'.")
             return {
                 "success": True,
                 "message": "Gemini AI connection successful",
-                "response": response.text
+                "response": response.text,
+                "current_api_key_index": self.current_key_index
             }
         except Exception as e:
             logger.error(f"Gemini AI connection test failed: {e}")
@@ -878,7 +964,7 @@ class GeminiAIService:
         Text: {text}
         """
         
-        response = self.model.generate_content(prompt)
+        response = self._make_api_call(prompt)
         response_text = response.text.strip()
         
         if response_text.startswith('```json'):
@@ -1070,7 +1156,7 @@ class GeminiAIService:
         try:
             # Simple test prompt
             test_prompt = "Respond with 'Connection successful' if you can read this message."
-            response = self.model.generate_content(test_prompt)
+            response = self._make_api_call(test_prompt)
             
             if response and response.text:
                 return {
@@ -1116,7 +1202,7 @@ class GeminiAIService:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self._make_api_call(prompt)
             response_text = response.text.strip()
             
             entities = self._parse_ai_response(response_text)

@@ -1,17 +1,34 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.db import models
+from django.db.models import Q
 import logging
 from typing import Dict, Any
 
 from .services import GeminiAIService
-from .models import ConversationAnalysis
+from .models import ConversationAnalysis, Lead, AIInsights
+from .serializers import (
+    LeadSerializer, LeadCreateSerializer, LeadUpdateSerializer, 
+    LeadListSerializer, AIInsightsSerializer
+)
+from .tasks import refresh_lead_insights
+from .quota_tracker import quota_tracker
 
 logger = logging.getLogger(__name__)
+
+
+class LeadPagination(PageNumberPagination):
+    """Custom pagination for lead list views"""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -143,6 +160,69 @@ class TestGeminiConnectionView(APIView):
             logger.error(f"Error testing Gemini connection: {e}")
             return Response(
                 {"error": f"Connection test failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GeminiQuotaStatusView(APIView):
+    """API endpoint to check Gemini API quota status"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get current Gemini API quota usage and status"""
+        try:
+            # Get current usage statistics
+            usage = quota_tracker.get_current_usage()
+            status_info = quota_tracker.get_quota_status()
+            
+            return Response({
+                'success': True,
+                'quota_status': {
+                    'healthy': status_info['healthy'],
+                    'warnings': status_info['warnings'],
+                    'errors': status_info['errors'],
+                    'usage': usage,
+                    'recommendations': []
+                },
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error checking quota status: {e}")
+            return Response(
+                {
+                    'success': False,
+                    'error': f'Failed to check quota status: {str(e)}',
+                    'error_code': 'QUOTA_CHECK_FAILED'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def post(self, request):
+        """Reset quota counters (admin only)"""
+        try:
+            # Check if user has admin permissions (you can customize this)
+            if not request.user.is_staff:
+                return Response(
+                    {'error': 'Admin permissions required'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            quota_type = request.data.get('quota_type', 'all')
+            quota_tracker.reset_quota(quota_type)
+            
+            return Response({
+                'success': True,
+                'message': f'Quota counters reset: {quota_type}',
+                'timestamp': timezone.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error resetting quota: {e}")
+            return Response(
+                {'error': f'Failed to reset quota: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -688,8 +768,7 @@ class IndustryInsightsView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-@m
-ethod_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class ComprehensiveRecommendationsView(APIView):
     """API endpoint for generating comprehensive sales recommendations with all components"""
     
@@ -889,5 +968,277 @@ class NextStepsRecommendationsView(APIView):
                     "error": f"Failed to generate next steps: {str(e)}",
                     "error_code": "NEXT_STEPS_FAILED"
                 },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# Lead Management Views with AI Integration
+
+from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+from django.shortcuts import get_object_or_404
+from django.db.models import Q, Avg
+from django.db import models
+from .models import Lead, AIInsights
+from .serializers import (
+    LeadSerializer, LeadCreateSerializer, LeadListSerializer, 
+    LeadUpdateSerializer, AIInsightsSerializer
+)
+from .tasks import analyze_lead_with_ai, refresh_lead_insights
+
+
+class LeadPagination(PageNumberPagination):
+    """Custom pagination for leads"""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class LeadViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing leads with AI insights integration
+    
+    Provides CRUD operations for leads with automatic AI analysis
+    """
+    permission_classes = [IsAuthenticated]
+    pagination_class = LeadPagination
+    
+    def get_queryset(self):
+        """Get leads for the authenticated user with optional filtering"""
+        queryset = Lead.objects.filter(user=self.request.user).select_related('ai_insights')
+        
+        # Filter by status
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by quality tier
+        quality_filter = self.request.query_params.get('quality_tier')
+        if quality_filter:
+            queryset = queryset.filter(ai_insights__quality_tier=quality_filter)
+        
+        # Search by company name or contact name
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(company_name__icontains=search) |
+                Q(contact_info__name__icontains=search) |
+                Q(contact_info__email__icontains=search)
+            )
+        
+        # Filter by urgency level
+        urgency_filter = self.request.query_params.get('urgency')
+        if urgency_filter:
+            queryset = queryset.filter(urgency_level=urgency_filter)
+        
+        # Order by creation date (newest first) or lead score
+        ordering = self.request.query_params.get('ordering', '-created_at')
+        if ordering == 'lead_score':
+            queryset = queryset.order_by('-ai_insights__lead_score', '-created_at')
+        elif ordering == '-lead_score':
+            queryset = queryset.order_by('ai_insights__lead_score', '-created_at')
+        else:
+            queryset = queryset.order_by(ordering)
+        
+        return queryset
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action"""
+        if self.action == 'create':
+            return LeadCreateSerializer
+        elif self.action == 'update' or self.action == 'partial_update':
+            return LeadUpdateSerializer
+        elif self.action == 'list':
+            return LeadListSerializer
+        else:
+            return LeadSerializer
+    
+    def create(self, request, *args, **kwargs):
+        """Create a new lead with optional AI analysis"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        lead = serializer.save()
+        
+        # Return full lead data with AI insights placeholder
+        response_serializer = LeadSerializer(lead)
+        
+        return Response({
+            'status': 'success',
+            'message': 'Lead created successfully',
+            'lead': response_serializer.data,
+            'ai_analysis_triggered': bool(request.data.get('conversation_text'))
+        }, status=status.HTTP_201_CREATED)
+    
+    def update(self, request, *args, **kwargs):
+        """Update a lead with optional AI re-analysis"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        
+        lead = serializer.save()
+        
+        # Return full lead data
+        response_serializer = LeadSerializer(lead)
+        
+        return Response({
+            'status': 'success',
+            'message': 'Lead updated successfully',
+            'lead': response_serializer.data,
+            'ai_analysis_triggered': request.data.get('trigger_ai_analysis', False)
+        })
+    
+    @action(detail=True, methods=['post'])
+    def refresh_insights(self, request, pk=None):
+        """Refresh AI insights for a specific lead"""
+        lead = self.get_object()
+        
+        if not lead.conversation_history:
+            return Response({
+                'error': 'No conversation history available for AI analysis'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Trigger AI analysis
+        task = refresh_lead_insights.delay(str(lead.id))
+        
+        return Response({
+            'status': 'success',
+            'message': 'AI insights refresh triggered',
+            'task_id': task.id
+        })
+    
+    @action(detail=True, methods=['get'])
+    def insights(self, request, pk=None):
+        """Get detailed AI insights for a specific lead"""
+        lead = self.get_object()
+        
+        try:
+            insights = lead.ai_insights
+            serializer = AIInsightsSerializer(insights)
+            return Response({
+                'status': 'success',
+                'insights': serializer.data
+            })
+        except AIInsights.DoesNotExist:
+            return Response({
+                'status': 'not_found',
+                'message': 'No AI insights available for this lead'
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['get'])
+    def high_priority(self, request):
+        """Get high-priority leads that need immediate attention"""
+        queryset = self.get_queryset().filter(
+            Q(ai_insights__quality_tier='high') |
+            Q(urgency_level='high') |
+            Q(ai_insights__conversion_probability__gte=70) |
+            Q(ai_insights__competitive_risk='high')
+        ).order_by('-ai_insights__lead_score', '-created_at')
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = LeadListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = LeadListSerializer(queryset, many=True)
+        return Response({
+            'status': 'success',
+            'high_priority_leads': serializer.data
+        })
+    
+    @action(detail=False, methods=['post'])
+    def bulk_refresh_insights(self, request):
+        """Refresh AI insights for multiple leads"""
+        lead_ids = request.data.get('lead_ids', [])
+        
+        if not lead_ids:
+            return Response({
+                'error': 'lead_ids list is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify all leads belong to the user
+        user_leads = self.get_queryset().filter(id__in=lead_ids)
+        valid_lead_ids = [str(lead.id) for lead in user_leads]
+        
+        if len(valid_lead_ids) != len(lead_ids):
+            return Response({
+                'error': 'Some lead IDs are invalid or do not belong to you'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Trigger bulk refresh
+        from .tasks import bulk_refresh_insights
+        task = bulk_refresh_insights.delay(valid_lead_ids)
+        
+        return Response({
+            'status': 'success',
+            'message': f'AI insights refresh triggered for {len(valid_lead_ids)} leads',
+            'task_id': task.id,
+            'lead_count': len(valid_lead_ids)
+        })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class LeadAnalyticsView(APIView):
+    """API endpoint for lead analytics and insights"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get analytics and insights about user's leads
+        """
+        try:
+            user_leads = Lead.objects.filter(user=request.user).select_related('ai_insights')
+            
+            # Basic statistics
+            total_leads = user_leads.count()
+            leads_with_insights = user_leads.filter(ai_insights__isnull=False).count()
+            
+            # Status distribution
+            status_distribution = {}
+            for status_choice in Lead.Status.choices:
+                status_distribution[status_choice[0]] = user_leads.filter(
+                    status=status_choice[0]
+                ).count()
+            
+            # Quality tier distribution
+            quality_distribution = {}
+            for quality_choice in AIInsights.QualityTier.choices:
+                quality_distribution[quality_choice[0]] = user_leads.filter(
+                    ai_insights__quality_tier=quality_choice[0]
+                ).count()
+            
+            # Average lead score
+            insights_queryset = AIInsights.objects.filter(lead__user=request.user)
+            avg_lead_score = insights_queryset.aggregate(
+                avg_score=models.Avg('lead_score')
+            )['avg_score'] or 0
+            
+            # High priority leads count
+            high_priority_count = user_leads.filter(
+                Q(ai_insights__quality_tier='high') |
+                Q(urgency_level='high') |
+                Q(ai_insights__conversion_probability__gte=70)
+            ).count()
+            
+            return Response({
+                'status': 'success',
+                'analytics': {
+                    'total_leads': total_leads,
+                    'leads_with_insights': leads_with_insights,
+                    'insights_coverage': (leads_with_insights / total_leads * 100) if total_leads > 0 else 0,
+                    'status_distribution': status_distribution,
+                    'quality_distribution': quality_distribution,
+                    'average_lead_score': round(avg_lead_score, 2),
+                    'high_priority_count': high_priority_count
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error generating lead analytics: {e}")
+            return Response(
+                {'error': 'Failed to generate analytics', 'details': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

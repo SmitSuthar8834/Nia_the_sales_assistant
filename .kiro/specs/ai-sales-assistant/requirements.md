@@ -99,7 +99,7 @@ NIA (Neural Intelligence Assistant) is an intelligent voice-enabled sales assist
 #### Acceptance Criteria
 
 1. WHEN setting up integrations THEN the system SHALL provide a configuration interface for CRM connections
-2. WHEN configuring Gemini AI THEN the system SHALL securely store and use the provided API key (AIzaSyDARTlDTQU2BAQhYjBhFhBD095-bpOscpQ)
+2. WHEN configuring Gemini AI THEN the system SHALL securely store and use the provided API key (your-gemini-api-key)
 3. WHEN managing users THEN the system SHALL support role-based access control for different user types
 4. WHEN monitoring the system THEN the system SHALL provide logs and analytics on AI assistant usage and performance
 5. IF configuration changes are made THEN the system SHALL validate settings and provide feedback on integration status
