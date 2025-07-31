@@ -14,7 +14,12 @@
   - Write unit tests for AI service initialization
   - _Requirements: 8.2, 2.1_
 
-- [ ] 2. Implement lead information extraction from text
+- [x] 2. Implement lead information extraction from text
+
+
+
+
+
   - Create lead information extraction function using Gemini AI
   - Build structured data extraction for company name, contacts, pain points, requirements
   - Implement entity recognition and data validation
@@ -23,7 +28,8 @@
   - Write tests for lead extraction accuracy with sample conversations
   - _Requirements: 2.1, 1.3, 7.1_
 
-- [ ] 3. Build AI-powered sales recommendations engine
+- [-] 3. Build AI-powered sales recommendations engine
+
   - Implement lead quality scoring using Gemini AI analysis
   - Create sales strategy recommendation generation based on lead characteristics
   - Build next steps and action suggestions functionality
@@ -100,44 +106,72 @@ oice Processing Service Implementation
 
 ## CRM Integration Service Implementation
 
-- [ ] 11. Build Creatio CRM integration
-  - Implement Creatio API client with OAuth authentication
-  - Create lead and opportunity synchronization functionality
-  - Build bidirectional data mapping between NIA and Creatio
-  - Implement activity logging and call record creation
-  - Create error handling and retry mechanisms for API failures
-  - Write integration tests with Creatio sandbox environment
-  - _Requirements: 5.1, 5.4, 4.1, 4.2, 4.4_
+- [ ] 11. Build Admin-Configurable API Integration Foundation
+  - Create APIConfiguration model for storing API endpoints, headers, authentication
+  - Build APICallChain model for multi-step API workflows (auth → get token → CRUD)
+  - Implement JSONResponseMapping model for mapping API responses to Lead fields
+  - Create admin interface for configuring API integrations
+  - Build API testing interface in admin panel (test calls, view responses)
+  - Write tests for API configuration and response mapping
+  - _Requirements: 5.1, 5.2, 8.1_
 
-- [ ] 12. Build SAP C4C CRM integration
-  - Implement SAP C4C API client with authentication
-  - Create lead and opportunity synchronization for SAP C4C
-  - Build data transformation and mapping functionality
-  - Implement activity logging and call record creation for SAP C4C
-  - Create conflict resolution for data synchronization
-  - Write integration tests with SAP C4C sandbox environment
-  - _Requirements: 5.2, 5.4, 4.1, 4.2, 4.4_
+- [ ] 12. Implement Dynamic API Call Engine
+  - Create APICallExecutor service for executing configured API chains
+  - Build response parsing and field mapping functionality
+  - Implement authentication flow handling (cookies, headers, tokens)
+  - Create parameter substitution system for chained calls
+  - Build error handling and retry mechanisms for API failures
+  - Write tests for API call execution and response handling
+  - _Requirements: 5.4, 4.1, 4.2_
 
-- [ ] 13. Implement unified CRM management and sync coordination
-  - Create CRM abstraction layer for unified operations
-  - Implement background job processing with Celery for CRM sync
-  - Build conflict resolution and data consistency management
-  - Create CRM health monitoring and connection status tracking
-  - Implement queue-based retry system for failed CRM operations
-  - Write tests for multi-CRM scenarios and edge cases
-  - _Requirements: 5.5, 4.5, 3.4_## Le
-ad Management Service Implementation
+- [ ] 13. Build CRM Integration Templates and Generic Adapter
+  - Create Creatio integration template with pre-configured API chains
+  - Build SAP C4C integration template with authentication flows
+  - Implement generic CRM adapter using configured API chains
+  - Create CRM operation templates (Create Lead, Update Lead, Get Leads)
+  - Build CRM-specific field mapping templates
+  - Write tests for CRM templates and generic adapter functionality
+  - _Requirements: 5.1, 5.2, 5.4, 4.4_
 
-- [ ] 14. Build comprehensive lead management API
-  - Create CRUD operations for lead management
-  - Implement lead search and filtering functionality
-  - Build lead status tracking and workflow management
-  - Create lead assignment and ownership management
-  - Implement lead history and audit trail functionality
-  - Write API tests for all lead management operations
+- [ ] 14. Implement Advanced API Configuration Features
+  - Build conditional API call logic (if-then-else in API chains)
+  - Create API response validation and error handling rules
+  - Implement data transformation functions (format dates, clean data)
+  - Build API call scheduling and batch processing
+  - Create API performance monitoring and logging
+  - Write tests for advanced configuration features
+  - _Requirements: 5.5, 4.5, 3.4_
+
+## Lead Management Service Implementation
+
+- [ ] 15. Build Enhanced Lead Management with Configurable Field Mapping
+  - Create enhanced Lead model with dynamic field mapping capabilities
+  - Implement configurable lead field mapping through admin panel
+  - Build CRUD operations for lead management with mapped fields
+  - Create lead search and filtering functionality
+  - Implement lead status tracking and workflow management
+  - Write API tests for configurable lead management operations
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 15. Implement conversation history and context management
+- [ ] 16. Implement Automated CRM Sync Engine
+  - Create automated sync engine using configured API chains
+  - Build bidirectional sync between NIA leads and configured CRMs
+  - Implement conflict resolution and data consistency management
+  - Create sync scheduling and batch processing functionality
+  - Build sync monitoring and error reporting in admin panel
+  - Write tests for automated sync operations and error handling
+  - _Requirements: 5.4, 5.5, 4.1, 4.2, 4.4_
+
+- [ ] 17. Build Admin Interface for CRM Management and Monitoring
+  - Create admin interface for managing CRM configurations
+  - Build CRM connection testing and health monitoring
+  - Implement sync status monitoring and manual sync triggers
+  - Create CRM activity logs and audit trail display
+  - Build conflict resolution interface for sync issues
+  - Write tests for admin CRM management functionality
+  - _Requirements: 5.5, 8.1, 8.4_
+
+- [ ] 18. Implement conversation history and context management
   - Create conversation storage and retrieval system
   - Build conversation search and filtering capabilities
   - Implement conversation context preservation across sessions
@@ -146,7 +180,7 @@ ad Management Service Implementation
   - Write tests for conversation data integrity and retrieval
   - _Requirements: 1.4, 3.3, 7.3_
 
-- [ ] 16. Build AI insights integration and management
+- [ ] 19. Build AI insights integration and management
   - Create AI insights storage and update mechanisms
   - Implement insights refresh and re-analysis functionality
   - Build insights comparison and trend analysis
@@ -157,7 +191,7 @@ ad Management Service Implementation
 
 ## Frontend Implementation
 
-- [ ] 17. Set up Angular frontend application structure
+- [ ] 20. Set up Angular frontend application structure
   - Create Angular 17+ project with Angular Material
   - Set up routing and navigation structure
   - Implement authentication guards and JWT token management
@@ -166,7 +200,7 @@ ad Management Service Implementation
   - Configure build and deployment pipeline
   - _Requirements: 3.1, 8.3_
 
-- [ ] 18. Build lead management interface
+- [ ] 21. Build lead management interface
   - Create lead list view with search and filtering
   - Implement lead detail view with conversation history
   - Build lead creation and editing forms
@@ -175,7 +209,7 @@ ad Management Service Implementation
   - Write component tests for lead management features
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 19. Implement AI insights and recommendations display
+- [ ] 22. Implement AI insights and recommendations display
   - Create AI insights dashboard and visualization
   - Build recommendation display and action interfaces
   - Implement insights refresh and update functionality
@@ -184,7 +218,7 @@ ad Management Service Implementation
   - Write tests for insights UI components
   - _Requirements: 2.2, 2.3, 2.4, 6.4_
 
-- [ ] 20. Build CRM integration management interface
+- [ ] 23. Build CRM integration management interface
   - Create CRM connection setup and configuration forms
   - Implement CRM status monitoring and health display
   - Build CRM synchronization controls and status
@@ -195,7 +229,7 @@ ad Management Service Implementation
 
 ## Integration and System Testing
 
-- [ ] 21. Implement end-to-end voice call workflow
+- [ ] 24. Implement end-to-end voice call workflow
   - Create complete voice call simulation testing
   - Test voice-to-lead conversion pipeline
   - Implement conversation-to-CRM sync testing
@@ -204,16 +238,16 @@ ad Management Service Implementation
   - Write comprehensive integration tests for voice workflow
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 4.1_
 
-- [ ] 22. Build comprehensive CRM synchronization testing
-  - Test bidirectional sync with both Creatio and SAP C4C
-  - Implement conflict resolution testing scenarios
-  - Create data consistency validation tests
-  - Build CRM failover and recovery testing
-  - Test multi-user CRM access scenarios
-  - Write performance tests for CRM operations
+- [ ] 25. Build comprehensive CRM synchronization testing
+  - Test bidirectional sync with configured CRM integrations
+  - Implement conflict resolution testing scenarios for admin-configured APIs
+  - Create data consistency validation tests for field mappings
+  - Build CRM failover and recovery testing for API chains
+  - Test multi-user CRM access scenarios with different configurations
+  - Write performance tests for configurable CRM operations
   - _Requirements: 5.4, 5.5, 4.4, 4.5_
 
-- [ ] 23. Implement AI accuracy and performance validation
+- [ ] 26. Implement AI accuracy and performance validation
   - Create AI response quality validation tests
   - Build recommendation accuracy measurement system
   - Implement conversation understanding validation
@@ -224,7 +258,7 @@ ad Management Service Implementation
 
 ## Deployment and Production Setup
 
-- [ ] 24. Configure production deployment infrastructure
+- [ ] 27. Configure production deployment infrastructure
   - Set up Kubernetes cluster configuration for all services
   - Create production Docker images with security hardening
   - Implement service mesh for inter-service communication
@@ -233,7 +267,7 @@ ad Management Service Implementation
   - Create deployment automation and CI/CD pipeline
   - _Requirements: 8.4_
 
-- [ ] 25. Implement security and compliance measures
+- [ ] 28. Implement security and compliance measures
   - Configure HTTPS and SSL certificates for all services
   - Implement data encryption at rest and in transit
   - Set up audit logging for compliance requirements
