@@ -12,6 +12,13 @@ urlpatterns = [
     path('extract-entities/', views.ExtractEntitiesView.as_view(), name='extract_entities'),
     path('validate-lead/', views.ValidateLeadDataView.as_view(), name='validate_lead_data'),
     
+    # AI-powered sales recommendations endpoints (Task 3)
+    path('lead-quality-score/', views.LeadQualityScoreView.as_view(), name='lead_quality_score'),
+    path('sales-strategy/', views.SalesStrategyView.as_view(), name='sales_strategy'),
+    path('industry-insights/', views.IndustryInsightsView.as_view(), name='industry_insights'),
+    path('comprehensive-recommendations/', views.ComprehensiveRecommendationsView.as_view(), name='comprehensive_recommendations'),
+    path('next-steps/', views.NextStepsRecommendationsView.as_view(), name='next_steps_recommendations'),
+    
     # Utility endpoints
     path('test-connection/', views.TestGeminiConnectionView.as_view(), name='test_connection'),
     path('history/', views.ConversationHistoryView.as_view(), name='conversation_history'),

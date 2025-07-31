@@ -415,6 +415,311 @@ class ConversationAnalysisModelTestCase(TestCase):
         self.assertEqual(analyses[1], analysis1)
 
 
+class SalesRecommendationsTestCase(TestCase):
+    """Test cases for AI-powered sales recommendations (Task 3)"""
+    
+    def setUp(self):
+        self.ai_service = GeminiAIService()
+        self.sample_lead_data = {
+            'company_name': 'TechStart Inc',
+            'contact_details': {
+                'name': 'Sarah Johnson',
+                'email': 'sarah@techstart.com',
+                'title': 'CTO'
+            },
+            'industry': 'Software Development',
+            'company_size': '50-100 employees',
+            'pain_points': ['Manual data entry', 'System integration issues'],
+            'requirements': ['Automated workflow', 'API integration'],
+            'budget_info': '$100,000 - $150,000',
+            'timeline': 'Q3 2024',
+            'urgency_level': 'high'
+        }
+    
+    @patch('ai_service.services.genai.configure')
+    @patch('ai_service.services.genai.GenerativeModel')
+    def test_lead_quality_score_calculation(self, mock_model, mock_configure):
+        """Test lead quality score calculation"""
+        mock_response = MagicMock()
+        mock_response.text = '''```json
+        {
+            "overall_score": 85,
+            "score_breakdown": {
+                "data_completeness": 90,
+                "engagement_level": 80,
+                "budget_fit": 85,
+                "timeline_urgency": 90,
+                "decision_authority": 75,
+                "pain_point_severity": 95
+            },
+            "quality_tier": "high",
+            "conversion_probability": 75,
+            "estimated_deal_size": "$100,000 - $150,000",
+            "sales_cycle_prediction": "3-6 months",
+            "key_strengths": ["Clear pain points", "Confirmed budget", "Urgent timeline"],
+            "improvement_areas": ["Need more decision maker access"],
+            "competitive_risk": "medium",
+            "next_best_action": "Schedule technical demo"
+        }
+        ```'''
+        
+        mock_model_instance = MagicMock()
+        mock_model_instance.generate_content.return_value = mock_response
+        mock_model.return_value = mock_model_instance
+        
+        ai_service = GeminiAIService()
+        quality_score = ai_service.calculate_lead_quality_score(self.sample_lead_data)
+        
+        self.assertEqual(quality_score['overall_score'], 85)
+        self.assertEqual(quality_score['quality_tier'], 'high')
+        self.assertEqual(quality_score['conversion_probability'], 75)
+        self.assertIn('Clear pain points', quality_score['key_strengths'])
+        self.assertIn('validation_metadata', quality_score)
+    
+    @patch('ai_service.services.genai.configure')
+    @patch('ai_service.services.genai.GenerativeModel')
+    def test_sales_strategy_generation(self, mock_model, mock_configure):
+        """Test sales strategy generation"""
+        mock_response = MagicMock()
+        mock_response.text = '''```json
+        {
+            "primary_strategy": "consultative",
+            "approach_rationale": "Technical buyer needs detailed solution understanding",
+            "key_messaging": [
+                "Focus on technical capabilities",
+                "Demonstrate integration ease",
+                "Show scalability benefits"
+            ],
+            "objection_handling": {
+                "budget_concerns": "Focus on ROI and efficiency gains",
+                "timing_issues": "Highlight urgent pain points",
+                "competition": "Emphasize technical superiority",
+                "authority": "Engage CEO in business case"
+            },
+            "engagement_tactics": [
+                "Technical demo with integration examples",
+                "Provide detailed technical documentation",
+                "Offer proof of concept"
+            ],
+            "success_metrics": [
+                "Demo engagement level",
+                "Technical questions asked",
+                "Follow-up meeting requests"
+            ],
+            "risk_mitigation": [
+                "Ensure technical fit early",
+                "Address integration concerns",
+                "Validate budget authority"
+            ]
+        }
+        ```'''
+        
+        mock_model_instance = MagicMock()
+        mock_model_instance.generate_content.return_value = mock_response
+        mock_model.return_value = mock_model_instance
+        
+        ai_service = GeminiAIService()
+        sales_strategy = ai_service.generate_sales_strategy(self.sample_lead_data)
+        
+        self.assertEqual(sales_strategy['primary_strategy'], 'consultative')
+        self.assertIn('Technical buyer needs', sales_strategy['approach_rationale'])
+        self.assertIn('Focus on technical capabilities', sales_strategy['key_messaging'])
+        self.assertIn('strategy_metadata', sales_strategy)
+        self.assertGreater(sales_strategy['strategy_metadata']['confidence_score'], 70)
+    
+    @patch('ai_service.services.genai.configure')
+    @patch('ai_service.services.genai.GenerativeModel')
+    def test_industry_insights_generation(self, mock_model, mock_configure):
+        """Test industry-specific insights generation"""
+        mock_response = MagicMock()
+        mock_response.text = '''```json
+        {
+            "industry_trends": [
+                "Digital transformation acceleration",
+                "Focus on developer productivity"
+            ],
+            "industry_pain_points": [
+                "Technical debt management",
+                "Integration complexity"
+            ],
+            "solution_fit": {
+                "why_relevant": "Addresses core development workflow issues",
+                "specific_benefits": ["Reduced manual work", "Better integration"],
+                "use_cases": ["CI/CD automation", "API management"]
+            },
+            "competitive_landscape": {
+                "common_competitors": ["GitLab", "Jenkins", "Azure DevOps"],
+                "differentiation_opportunities": ["Ease of integration", "Developer experience"]
+            },
+            "sales_best_practices": [
+                "Speak technical language",
+                "Focus on developer experience",
+                "Provide hands-on demos"
+            ],
+            "compliance_considerations": [
+                "SOC 2 compliance",
+                "Data security requirements"
+            ],
+            "success_stories": [
+                "Similar companies reduced deployment time by 60%",
+                "Improved developer satisfaction scores"
+            ]
+        }
+        ```'''
+        
+        mock_model_instance = MagicMock()
+        mock_model_instance.generate_content.return_value = mock_response
+        mock_model.return_value = mock_model_instance
+        
+        ai_service = GeminiAIService()
+        industry_insights = ai_service.generate_industry_insights(self.sample_lead_data)
+        
+        self.assertIn('Digital transformation', industry_insights['industry_trends'][0])
+        self.assertIn('Technical debt', industry_insights['industry_pain_points'][0])
+        self.assertIn('Addresses core development', industry_insights['solution_fit']['why_relevant'])
+        self.assertIn('insights_metadata', industry_insights)
+        self.assertTrue(industry_insights['insights_metadata']['industry_specified'])
+    
+    def test_recommendation_confidence_calculation(self):
+        """Test recommendation confidence scoring"""
+        # Test with complete data
+        complete_recommendation = {
+            'type': 'next_step',
+            'priority': 'high',
+            'title': 'Schedule demo'
+        }
+        
+        confidence = self.ai_service._calculate_recommendation_confidence(
+            complete_recommendation, self.sample_lead_data
+        )
+        
+        self.assertGreater(confidence, 70)  # Should be high confidence
+        
+        # Test with incomplete data
+        incomplete_data = {'company_name': 'Test Corp'}
+        incomplete_confidence = self.ai_service._calculate_recommendation_confidence(
+            complete_recommendation, incomplete_data
+        )
+        
+        self.assertLess(incomplete_confidence, confidence)  # Should be lower
+    
+    def test_default_fallbacks(self):
+        """Test default fallback methods"""
+        # Test default quality score
+        default_quality = self.ai_service._get_default_quality_score()
+        self.assertEqual(default_quality['overall_score'], 50)
+        self.assertEqual(default_quality['quality_tier'], 'medium')
+        self.assertIn('validation_metadata', default_quality)
+        
+        # Test default strategy
+        default_strategy = self.ai_service._get_default_strategy()
+        self.assertEqual(default_strategy['primary_strategy'], 'consultative')
+        self.assertIn('strategy_metadata', default_strategy)
+        
+        # Test default insights
+        default_insights = self.ai_service._get_default_insights()
+        self.assertIn('industry_trends', default_insights)
+        self.assertIn('insights_metadata', default_insights)
+
+
+class SalesRecommendationsAPITestCase(APITestCase):
+    """Test cases for sales recommendations API endpoints"""
+    
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        
+        self.sample_lead_data = {
+            'company_name': 'TechStart Inc',
+            'contact_details': {'name': 'Sarah Johnson'},
+            'industry': 'Software Development',
+            'pain_points': ['Manual processes'],
+            'requirements': ['Automation']
+        }
+    
+    @patch('ai_service.views.GeminiAIService')
+    def test_lead_quality_score_endpoint(self, mock_service):
+        """Test lead quality score API endpoint"""
+        mock_instance = mock_service.return_value
+        mock_instance.calculate_lead_quality_score.return_value = {
+            'overall_score': 85,
+            'quality_tier': 'high',
+            'conversion_probability': 75,
+            'validation_metadata': {'confidence_level': 90}
+        }
+        
+        url = reverse('ai_service:lead_quality_score')
+        data = {'lead_data': self.sample_lead_data}
+        
+        response = self.client.post(url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        self.assertEqual(response.data['quality_score']['overall_score'], 85)
+        self.assertIsNotNone(response.data['calculated_at'])
+    
+    @patch('ai_service.views.GeminiAIService')
+    def test_sales_strategy_endpoint(self, mock_service):
+        """Test sales strategy API endpoint"""
+        mock_instance = mock_service.return_value
+        mock_instance.generate_sales_strategy.return_value = {
+            'primary_strategy': 'consultative',
+            'key_messaging': ['Focus on value'],
+            'strategy_metadata': {'confidence_score': 80}
+        }
+        
+        url = reverse('ai_service:sales_strategy')
+        data = {'lead_data': self.sample_lead_data}
+        
+        response = self.client.post(url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        self.assertEqual(response.data['sales_strategy']['primary_strategy'], 'consultative')
+        self.assertIsNotNone(response.data['generated_at'])
+    
+    @patch('ai_service.views.GeminiAIService')
+    def test_industry_insights_endpoint(self, mock_service):
+        """Test industry insights API endpoint"""
+        mock_instance = mock_service.return_value
+        mock_instance.generate_industry_insights.return_value = {
+            'industry_trends': ['Digital transformation'],
+            'solution_fit': {'why_relevant': 'Addresses key needs'},
+            'insights_metadata': {'confidence_score': 85}
+        }
+        
+        url = reverse('ai_service:industry_insights')
+        data = {'lead_data': self.sample_lead_data}
+        
+        response = self.client.post(url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+        self.assertIn('Digital transformation', response.data['industry_insights']['industry_trends'])
+        self.assertIsNotNone(response.data['generated_at'])
+    
+    def test_missing_lead_data_error(self):
+        """Test error handling for missing lead data"""
+        endpoints = [
+            'ai_service:lead_quality_score',
+            'ai_service:sales_strategy',
+            'ai_service:industry_insights'
+        ]
+        
+        for endpoint_name in endpoints:
+            url = reverse(endpoint_name)
+            response = self.client.post(url, {}, format='json')
+            
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertFalse(response.data['success'])
+            self.assertEqual(response.data['error_code'], 'MISSING_LEAD_DATA')
+
+
 class LeadExtractionAccuracyTestCase(TestCase):
     """Test cases for lead extraction accuracy with sample conversations"""
     

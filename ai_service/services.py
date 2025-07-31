@@ -280,62 +280,34 @@ class GeminiAIService:
         
         return (filled_fields / total_fields) * 100
     
-    def generate_recommendations(self, lead_data: dict, context: dict = None) -> list:
+    def generate_recommendations(self, lead_data: dict, context: dict = None) -> dict:
         """
-        Generate AI-powered sales recommendations based on lead data
+        Generate comprehensive AI-powered sales recommendations based on lead data
         
         Args:
             lead_data (dict): Extracted lead information
             context (dict): Additional context information
             
         Returns:
-            list: List of recommendations
+            dict: Comprehensive recommendations with scoring and insights
         """
         context_info = context or {}
         
-        prompt = f"""
-        Based on the following lead information, provide specific sales recommendations and next steps.
-        
-        Lead Information:
-        {json.dumps(lead_data, indent=2)}
-        
-        Additional Context:
-        {json.dumps(context_info, indent=2)}
-        
-        Please provide recommendations in the following JSON format:
-        {{
-            "recommendations": [
-                {{
-                    "type": "next_step|strategy|approach",
-                    "title": "Brief title",
-                    "description": "Detailed description",
-                    "priority": "high|medium|low",
-                    "timeline": "suggested timeline"
-                }}
-            ],
-            "lead_score": "score from 1-100",
-            "conversion_probability": "probability percentage",
-            "key_insights": ["list of key insights"],
-            "risk_factors": ["list of potential risks"],
-            "opportunities": ["list of opportunities"]
-        }}
-        
-        Focus on actionable, specific recommendations based on sales best practices.
-        """
+        # Enhanced prompt for comprehensive recommendations
+        prompt = self._build_recommendations_prompt(lead_data, context_info)
         
         try:
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
             
             # Clean up JSON formatting
-            if response_text.startswith('```json'):
-                response_text = response_text[7:-3].strip()
-            elif response_text.startswith('```'):
-                response_text = response_text[3:-3].strip()
+            recommendations_data = self._parse_ai_response(response_text)
             
-            recommendations_data = json.loads(response_text)
-            logger.info(f"Generated recommendations: {recommendations_data}")
-            return recommendations_data
+            # Add confidence scoring and ranking
+            enhanced_recommendations = self._enhance_recommendations(recommendations_data, lead_data)
+            
+            logger.info(f"Generated enhanced recommendations: {enhanced_recommendations}")
+            return enhanced_recommendations
             
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse recommendations JSON: {e}")
@@ -343,6 +315,487 @@ class GeminiAIService:
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}")
             return self._get_default_recommendations()
+    
+    def calculate_lead_quality_score(self, lead_data: dict) -> dict:
+        """
+        Calculate comprehensive lead quality score using AI analysis
+        
+        Args:
+            lead_data (dict): Lead information to analyze
+            
+        Returns:
+            dict: Lead quality analysis with score and breakdown
+        """
+        prompt = f"""
+        Analyze this lead and provide a comprehensive quality assessment:
+        
+        Lead Data: {json.dumps(lead_data, indent=2)}
+        
+        Provide analysis in this EXACT JSON format:
+        {{
+            "overall_score": 85,
+            "score_breakdown": {{
+                "data_completeness": 90,
+                "engagement_level": 80,
+                "budget_fit": 85,
+                "timeline_urgency": 75,
+                "decision_authority": 70,
+                "pain_point_severity": 95
+            }},
+            "quality_tier": "high|medium|low",
+            "conversion_probability": 65,
+            "estimated_deal_size": "$50,000 - $100,000",
+            "sales_cycle_prediction": "3-6 months",
+            "key_strengths": ["specific strengths identified"],
+            "improvement_areas": ["areas that need more qualification"],
+            "competitive_risk": "high|medium|low",
+            "next_best_action": "specific recommended next step"
+        }}
+        
+        Base scoring on: data completeness, engagement signals, budget indicators, 
+        timeline urgency, decision-making authority, and pain point severity.
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            quality_data = self._parse_ai_response(response_text)
+            
+            # Validate and enhance the quality score
+            validated_quality = self._validate_quality_score(quality_data, lead_data)
+            
+            logger.info(f"Calculated lead quality score: {validated_quality}")
+            return validated_quality
+            
+        except Exception as e:
+            logger.error(f"Error calculating lead quality score: {e}")
+            return self._get_default_quality_score()
+    
+    def generate_sales_strategy(self, lead_data: dict, quality_score: dict = None) -> dict:
+        """
+        Generate tailored sales strategy based on lead characteristics
+        
+        Args:
+            lead_data (dict): Lead information
+            quality_score (dict): Optional pre-calculated quality score
+            
+        Returns:
+            dict: Comprehensive sales strategy recommendations
+        """
+        quality_info = quality_score or self.calculate_lead_quality_score(lead_data)
+        
+        prompt = f"""
+        Create a tailored sales strategy for this lead:
+        
+        Lead Data: {json.dumps(lead_data, indent=2)}
+        Quality Assessment: {json.dumps(quality_info, indent=2)}
+        
+        Provide strategy in this EXACT JSON format:
+        {{
+            "primary_strategy": "consultative|solution|relationship|competitive",
+            "approach_rationale": "why this strategy fits this lead",
+            "key_messaging": [
+                "primary value proposition",
+                "secondary benefits",
+                "differentiation points"
+            ],
+            "objection_handling": {{
+                "budget_concerns": "how to address budget objections",
+                "timing_issues": "how to handle timing concerns",
+                "competition": "how to differentiate from competitors",
+                "authority": "how to reach decision makers"
+            }},
+            "engagement_tactics": [
+                "specific tactics for this lead type",
+                "communication preferences",
+                "meeting/demo strategies"
+            ],
+            "success_metrics": [
+                "how to measure progress",
+                "key milestones to track"
+            ],
+            "risk_mitigation": [
+                "potential risks and how to avoid them"
+            ]
+        }}
+        
+        Tailor strategy to the lead's industry, company size, pain points, and quality tier.
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            strategy_data = self._parse_ai_response(response_text)
+            
+            # Add strategy confidence and ranking
+            enhanced_strategy = self._enhance_strategy(strategy_data, lead_data, quality_info)
+            
+            logger.info(f"Generated sales strategy: {enhanced_strategy}")
+            return enhanced_strategy
+            
+        except Exception as e:
+            logger.error(f"Error generating sales strategy: {e}")
+            return self._get_default_strategy()
+    
+    def generate_industry_insights(self, lead_data: dict) -> dict:
+        """
+        Generate industry-specific insights and best practices
+        
+        Args:
+            lead_data (dict): Lead information with industry context
+            
+        Returns:
+            dict: Industry-specific insights and recommendations
+        """
+        industry = lead_data.get('industry', 'General Business')
+        company_size = lead_data.get('company_size', 'Unknown')
+        
+        prompt = f"""
+        Provide industry-specific insights and best practices for this lead:
+        
+        Industry: {industry}
+        Company Size: {company_size}
+        Lead Context: {json.dumps(lead_data, indent=2)}
+        
+        Provide insights in this EXACT JSON format:
+        {{
+            "industry_trends": [
+                "current trends affecting this industry",
+                "market challenges and opportunities"
+            ],
+            "industry_pain_points": [
+                "common pain points in this industry",
+                "typical business challenges"
+            ],
+            "solution_fit": {{
+                "why_relevant": "why our solution fits this industry",
+                "specific_benefits": ["industry-specific benefits"],
+                "use_cases": ["relevant use cases for this industry"]
+            }},
+            "competitive_landscape": {{
+                "common_competitors": ["typical competitors in this space"],
+                "differentiation_opportunities": ["how to stand out"]
+            }},
+            "sales_best_practices": [
+                "industry-specific sales approaches",
+                "communication preferences",
+                "decision-making patterns"
+            ],
+            "compliance_considerations": [
+                "regulatory or compliance factors to consider"
+            ],
+            "success_stories": [
+                "relevant case studies or success patterns"
+            ]
+        }}
+        
+        Focus on actionable insights specific to {industry} companies of size {company_size}.
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            insights_data = self._parse_ai_response(response_text)
+            
+            # Add confidence scoring for insights
+            enhanced_insights = self._enhance_insights(insights_data, lead_data)
+            
+            logger.info(f"Generated industry insights: {enhanced_insights}")
+            return enhanced_insights
+            
+        except Exception as e:
+            logger.error(f"Error generating industry insights: {e}")
+            return self._get_default_insights()
+    
+    def _build_recommendations_prompt(self, lead_data: dict, context: dict) -> str:
+        """Build comprehensive recommendations prompt"""
+        return f"""
+        You are an expert sales strategist. Analyze this lead and provide comprehensive recommendations.
+        
+        Lead Information:
+        {json.dumps(lead_data, indent=2)}
+        
+        Additional Context:
+        {json.dumps(context, indent=2)}
+        
+        Provide recommendations in this EXACT JSON format:
+        {{
+            "recommendations": [
+                {{
+                    "type": "next_step|strategy|approach|follow_up",
+                    "title": "Brief actionable title",
+                    "description": "Detailed description with specific actions",
+                    "priority": "high|medium|low",
+                    "timeline": "immediate|1-3 days|1 week|2-4 weeks",
+                    "effort_level": "low|medium|high",
+                    "expected_outcome": "what this should achieve",
+                    "success_metrics": "how to measure success"
+                }}
+            ],
+            "lead_score": 85,
+            "conversion_probability": 65,
+            "estimated_close_timeline": "3-6 months",
+            "key_insights": [
+                "important insights about this lead",
+                "opportunities identified",
+                "potential challenges"
+            ],
+            "risk_factors": [
+                "potential risks that could derail the deal",
+                "competitive threats",
+                "internal challenges"
+            ],
+            "opportunities": [
+                "specific opportunities to pursue",
+                "upsell/cross-sell potential",
+                "expansion possibilities"
+            ],
+            "next_best_actions": [
+                "top 3 immediate actions to take",
+                "prioritized by impact and urgency"
+            ]
+        }}
+        
+        Focus on specific, actionable recommendations based on the lead's characteristics.
+        """
+    
+    def _enhance_recommendations(self, recommendations: dict, lead_data: dict) -> dict:
+        """Enhance recommendations with confidence scoring and ranking"""
+        enhanced = recommendations.copy()
+        
+        # Add confidence scoring for each recommendation
+        if 'recommendations' in enhanced:
+            for rec in enhanced['recommendations']:
+                rec['confidence_score'] = self._calculate_recommendation_confidence(rec, lead_data)
+            
+            # Sort recommendations by priority and confidence
+            enhanced['recommendations'] = sorted(
+                enhanced['recommendations'],
+                key=lambda x: (
+                    {'high': 3, 'medium': 2, 'low': 1}.get(x.get('priority', 'low'), 1),
+                    x.get('confidence_score', 0)
+                ),
+                reverse=True
+            )
+        
+        # Add overall recommendation confidence
+        enhanced['recommendation_confidence'] = self._calculate_overall_confidence(enhanced, lead_data)
+        
+        return enhanced
+    
+    def _calculate_recommendation_confidence(self, recommendation: dict, lead_data: dict) -> float:
+        """Calculate confidence score for individual recommendation"""
+        confidence = 50.0  # Base confidence
+        
+        # Increase confidence based on data completeness
+        completeness = self._calculate_data_completeness(lead_data)
+        confidence += (completeness / 100) * 20
+        
+        # Adjust based on recommendation type
+        rec_type = recommendation.get('type', '')
+        if rec_type == 'next_step':
+            confidence += 15  # Next steps are usually high confidence
+        elif rec_type == 'strategy':
+            confidence += 10  # Strategy recommendations are medium-high confidence
+        
+        # Adjust based on priority
+        priority = recommendation.get('priority', 'low')
+        if priority == 'high':
+            confidence += 10
+        elif priority == 'medium':
+            confidence += 5
+        
+        return min(confidence, 100.0)
+    
+    def _calculate_overall_confidence(self, recommendations: dict, lead_data: dict) -> float:
+        """Calculate overall confidence in the recommendation set"""
+        base_confidence = 60.0
+        
+        # Factor in lead score if available
+        lead_score = recommendations.get('lead_score', 50)
+        base_confidence += (lead_score - 50) * 0.4
+        
+        # Factor in data completeness
+        completeness = self._calculate_data_completeness(lead_data)
+        base_confidence += (completeness / 100) * 20
+        
+        return min(base_confidence, 100.0)
+    
+    def _validate_quality_score(self, quality_data: dict, lead_data: dict) -> dict:
+        """Validate and enhance quality score data"""
+        validated = quality_data.copy()
+        
+        # Ensure score is within valid range
+        if 'overall_score' in validated:
+            validated['overall_score'] = max(0, min(100, validated['overall_score']))
+        
+        # Add validation metadata
+        validated['validation_metadata'] = {
+            'data_points_used': len([k for k, v in lead_data.items() if v]),
+            'confidence_level': self._calculate_data_completeness(lead_data),
+            'last_calculated': None  # Will be set by the view
+        }
+        
+        return validated
+    
+    def _enhance_strategy(self, strategy: dict, lead_data: dict, quality_info: dict) -> dict:
+        """Enhance strategy with additional metadata"""
+        enhanced = strategy.copy()
+        
+        enhanced['strategy_metadata'] = {
+            'based_on_quality_tier': quality_info.get('quality_tier', 'medium'),
+            'confidence_score': self._calculate_strategy_confidence(strategy, lead_data),
+            'last_generated': None  # Will be set by the view
+        }
+        
+        return enhanced
+    
+    def _calculate_strategy_confidence(self, strategy: dict, lead_data: dict) -> float:
+        """Calculate confidence in the generated strategy"""
+        confidence = 70.0  # Base confidence for strategies
+        
+        # Increase confidence based on data completeness
+        completeness = self._calculate_data_completeness(lead_data)
+        confidence += (completeness / 100) * 20
+        
+        # Increase confidence if industry is specified
+        if lead_data.get('industry'):
+            confidence += 10
+        
+        return min(confidence, 100.0)
+    
+    def _enhance_insights(self, insights: dict, lead_data: dict) -> dict:
+        """Enhance industry insights with metadata"""
+        enhanced = insights.copy()
+        
+        enhanced['insights_metadata'] = {
+            'industry_specified': bool(lead_data.get('industry')),
+            'confidence_score': self._calculate_insights_confidence(insights, lead_data),
+            'last_generated': None  # Will be set by the view
+        }
+        
+        return enhanced
+    
+    def _calculate_insights_confidence(self, insights: dict, lead_data: dict) -> float:
+        """Calculate confidence in industry insights"""
+        confidence = 60.0  # Base confidence
+        
+        # Higher confidence if industry is clearly specified
+        if lead_data.get('industry') and lead_data['industry'] != 'Unknown':
+            confidence += 25
+        
+        # Higher confidence if company size is known
+        if lead_data.get('company_size'):
+            confidence += 15
+        
+        return min(confidence, 100.0)
+    
+    def _get_default_quality_score(self) -> dict:
+        """Return default quality score when calculation fails"""
+        return {
+            "overall_score": 50,
+            "score_breakdown": {
+                "data_completeness": 30,
+                "engagement_level": 50,
+                "budget_fit": 50,
+                "timeline_urgency": 50,
+                "decision_authority": 50,
+                "pain_point_severity": 50
+            },
+            "quality_tier": "medium",
+            "conversion_probability": 25,
+            "estimated_deal_size": "Unknown",
+            "sales_cycle_prediction": "Unknown",
+            "key_strengths": ["More information needed"],
+            "improvement_areas": ["Gather more lead qualification data"],
+            "competitive_risk": "medium",
+            "next_best_action": "Schedule discovery call to gather more information",
+            "validation_metadata": {
+                "data_points_used": 0,
+                "confidence_level": 0,
+                "last_calculated": None
+            }
+        }
+    
+    def _get_default_strategy(self) -> dict:
+        """Return default sales strategy when generation fails"""
+        return {
+            "primary_strategy": "consultative",
+            "approach_rationale": "Insufficient data for specific strategy - using consultative approach",
+            "key_messaging": [
+                "Focus on understanding customer needs",
+                "Demonstrate value through discovery",
+                "Build trust through expertise"
+            ],
+            "objection_handling": {
+                "budget_concerns": "Focus on ROI and value demonstration",
+                "timing_issues": "Understand urgency drivers and create compelling events",
+                "competition": "Differentiate through unique value proposition",
+                "authority": "Identify and engage key decision makers"
+            },
+            "engagement_tactics": [
+                "Schedule discovery calls",
+                "Provide relevant case studies",
+                "Offer value-added insights"
+            ],
+            "success_metrics": [
+                "Meeting acceptance rate",
+                "Engagement level in conversations",
+                "Progression through sales stages"
+            ],
+            "risk_mitigation": [
+                "Qualify budget and authority early",
+                "Understand competitive landscape",
+                "Maintain regular communication"
+            ],
+            "strategy_metadata": {
+                "based_on_quality_tier": "medium",
+                "confidence_score": 40.0,
+                "last_generated": None
+            }
+        }
+    
+    def _get_default_insights(self) -> dict:
+        """Return default industry insights when generation fails"""
+        return {
+            "industry_trends": [
+                "Digital transformation continues across industries",
+                "Focus on operational efficiency and cost reduction"
+            ],
+            "industry_pain_points": [
+                "Manual processes and inefficiencies",
+                "Data silos and integration challenges"
+            ],
+            "solution_fit": {
+                "why_relevant": "Most businesses need improved efficiency and automation",
+                "specific_benefits": ["Reduced manual work", "Better data insights"],
+                "use_cases": ["Process automation", "Data integration"]
+            },
+            "competitive_landscape": {
+                "common_competitors": ["Various solution providers in the market"],
+                "differentiation_opportunities": ["Focus on specific customer needs"]
+            },
+            "sales_best_practices": [
+                "Focus on business outcomes",
+                "Demonstrate clear ROI",
+                "Provide proof of concept opportunities"
+            ],
+            "compliance_considerations": [
+                "Standard data privacy and security requirements"
+            ],
+            "success_stories": [
+                "Similar companies have seen efficiency improvements",
+                "ROI typically achieved within 6-12 months"
+            ],
+            "insights_metadata": {
+                "industry_specified": False,
+                "confidence_score": 30.0,
+                "last_generated": None
+            }
+        }
     
     def test_connection(self) -> dict:
         """
@@ -513,12 +966,346 @@ class GeminiAIService:
                     "title": "Follow up with prospect",
                     "description": "Schedule a follow-up call to gather more information",
                     "priority": "medium",
-                    "timeline": "within 2-3 days"
+                    "timeline": "1-3 days",
+                    "effort_level": "low",
+                    "expected_outcome": "Gather more lead qualification data",
+                    "success_metrics": "Obtain contact details and pain points",
+                    "confidence_score": 70.0
                 }
             ],
             "lead_score": 50,
-            "conversion_probability": "25%",
+            "conversion_probability": 25,
+            "estimated_close_timeline": "Unknown",
             "key_insights": ["More information needed to provide detailed analysis"],
             "risk_factors": ["Limited information available"],
-            "opportunities": ["Potential for further qualification"]
+            "opportunities": ["Potential for further qualification"],
+            "next_best_actions": [
+                "Schedule discovery call",
+                "Send follow-up email",
+                "Research company background"
+            ],
+            "recommendation_confidence": 60.0
+        }
+    
+    def _get_default_strategy(self) -> dict:
+        """Return default sales strategy when generation fails"""
+        return {
+            "primary_strategy": "consultative",
+            "approach_rationale": "Insufficient data requires consultative approach to gather information",
+            "key_messaging": [
+                "Focus on understanding business challenges",
+                "Demonstrate expertise through questions",
+                "Build trust through active listening"
+            ],
+            "objection_handling": {
+                "budget_concerns": "Focus on ROI and value demonstration",
+                "timing_issues": "Understand urgency drivers and create compelling timeline",
+                "competition": "Differentiate through unique value proposition",
+                "authority": "Identify and engage decision makers early"
+            },
+            "engagement_tactics": [
+                "Ask open-ended discovery questions",
+                "Share relevant case studies",
+                "Provide educational content"
+            ],
+            "success_metrics": [
+                "Number of pain points identified",
+                "Decision maker engagement level",
+                "Meeting progression rate"
+            ],
+            "risk_mitigation": [
+                "Qualify budget early",
+                "Identify all stakeholders",
+                "Understand decision process"
+            ],
+            "strategy_metadata": {
+                "based_on_quality_tier": "medium",
+                "confidence_score": 60.0,
+                "last_generated": None
+            }
+        }
+    
+    def _get_default_insights(self) -> dict:
+        """Return default industry insights when generation fails"""
+        return {
+            "industry_trends": [
+                "Digital transformation continues across industries",
+                "Cost optimization remains a priority"
+            ],
+            "industry_pain_points": [
+                "Operational efficiency challenges",
+                "Technology integration issues"
+            ],
+            "solution_fit": {
+                "why_relevant": "General business solutions apply across industries",
+                "specific_benefits": ["Improved efficiency", "Cost reduction"],
+                "use_cases": ["Process automation", "Data management"]
+            },
+            "competitive_landscape": {
+                "common_competitors": ["Industry-standard solutions"],
+                "differentiation_opportunities": ["Customization", "Support quality"]
+            },
+            "sales_best_practices": [
+                "Focus on business outcomes",
+                "Demonstrate clear ROI",
+                "Build relationships with key stakeholders"
+            ],
+            "compliance_considerations": [
+                "Data privacy regulations",
+                "Industry-specific compliance requirements"
+            ],
+            "success_stories": [
+                "Similar companies have achieved efficiency gains",
+                "ROI typically realized within 6-12 months"
+            ],
+            "insights_metadata": {
+                "industry_specified": False,
+                "confidence_score": 50.0,
+                "last_generated": None
+            }
+        }
+    
+    def test_connection(self) -> dict:
+        """Test connection to Gemini AI service"""
+        try:
+            # Simple test prompt
+            test_prompt = "Respond with 'Connection successful' if you can read this message."
+            response = self.model.generate_content(test_prompt)
+            
+            if response and response.text:
+                return {
+                    "success": True,
+                    "message": "Gemini AI connection successful",
+                    "model": "gemini-1.5-flash",
+                    "response": response.text.strip()
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "No response from Gemini AI",
+                    "error": "Empty response"
+                }
+                
+        except Exception as e:
+            logger.error(f"Gemini AI connection test failed: {e}")
+            return {
+                "success": False,
+                "message": "Gemini AI connection failed",
+                "error": str(e)
+            }
+    
+    def extract_entities(self, text: str) -> dict:
+        """Extract named entities from text using Gemini AI"""
+        prompt = f"""
+        Extract named entities from the following text and categorize them:
+        
+        Text: {text}
+        
+        Return the entities in this JSON format:
+        {{
+            "people": ["person names"],
+            "organizations": ["company/organization names"],
+            "locations": ["places, cities, countries"],
+            "products": ["product or service names"],
+            "technologies": ["technology or software names"],
+            "dates": ["dates and time references"],
+            "money": ["monetary amounts"],
+            "phone_numbers": ["phone numbers"],
+            "emails": ["email addresses"]
+        }}
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            entities = self._parse_ai_response(response_text)
+            
+            # Clean and validate entities
+            cleaned_entities = {}
+            for category, items in entities.items():
+                if isinstance(items, list):
+                    cleaned_entities[category] = [
+                        item.strip() for item in items 
+                        if item and item.strip()
+                    ]
+                else:
+                    cleaned_entities[category] = []
+            
+            return cleaned_entities
+            
+        except Exception as e:
+            logger.error(f"Error extracting entities: {e}")
+            return {
+                "people": [],
+                "organizations": [],
+                "locations": [],
+                "products": [],
+                "technologies": [],
+                "dates": [],
+                "money": [],
+                "phone_numbers": [],
+                "emails": []
+            }
+    
+    def validate_extracted_data(self, data: dict) -> dict:
+        """Validate extracted lead data and return validation results"""
+        validation_results = {
+            'is_valid': True,
+            'errors': [],
+            'warnings': [],
+            'data_quality_score': 0.0
+        }
+        
+        # Validate required fields
+        if not data.get('company_name') and not data.get('contact_details', {}).get('name'):
+            validation_results['errors'].append("Either company name or contact name is required")
+            validation_results['is_valid'] = False
+        
+        # Validate contact details
+        contact = data.get('contact_details', {})
+        if contact.get('email') and not self.validator.validate_email(contact['email']):
+            validation_results['errors'].append(f"Invalid email format: {contact['email']}")
+            validation_results['is_valid'] = False
+        
+        if contact.get('phone') and not self.validator.validate_phone(contact['phone']):
+            validation_results['warnings'].append(f"Phone number format may be invalid: {contact['phone']}")
+        
+        # Check data completeness
+        completeness = self._calculate_data_completeness(data)
+        if completeness < 30:
+            validation_results['warnings'].append("Low data completeness - consider gathering more information")
+        
+        validation_results['data_quality_score'] = self._calculate_confidence_score(data)
+        
+        return validation_results 
+   
+    def _generate_contextual_next_steps(self, lead_data: dict, context: dict) -> dict:
+        """Generate contextual next steps based on lead data and current context"""
+        current_stage = context.get('current_stage', 'prospecting')
+        priority_focus = context.get('priority_focus', 'quality')
+        constraints = context.get('constraints', {})
+        
+        prompt = f"""
+        Generate specific next steps for this sales lead based on the current context:
+        
+        Lead Data: {json.dumps(lead_data, indent=2)}
+        Current Stage: {current_stage}
+        Priority Focus: {priority_focus}
+        Constraints: {json.dumps(constraints, indent=2)}
+        
+        Provide next steps in this EXACT JSON format:
+        {{
+            "immediate_actions": [
+                {{
+                    "action": "specific action to take",
+                    "timeline": "when to complete this",
+                    "priority": "high|medium|low",
+                    "effort": "low|medium|high",
+                    "expected_outcome": "what this should achieve"
+                }}
+            ],
+            "follow_up_sequence": [
+                {{
+                    "step": 1,
+                    "action": "first follow-up action",
+                    "timing": "when to do this",
+                    "method": "email|phone|meeting|demo"
+                }}
+            ],
+            "preparation_tasks": [
+                "research tasks",
+                "materials to prepare",
+                "stakeholders to identify"
+            ],
+            "success_metrics": [
+                "how to measure progress",
+                "key indicators of success"
+            ],
+            "contingency_plans": [
+                "what to do if primary approach fails",
+                "alternative strategies"
+            ]
+        }}
+        
+        Tailor recommendations to the {current_stage} stage with {priority_focus} focus.
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            next_steps = self._parse_ai_response(response_text)
+            
+            # Add confidence scoring
+            next_steps['confidence_score'] = self._calculate_next_steps_confidence(next_steps, lead_data, context)
+            next_steps['generated_at'] = None  # Will be set by the view
+            
+            return next_steps
+            
+        except Exception as e:
+            logger.error(f"Error generating contextual next steps: {e}")
+            return self._get_default_next_steps()
+    
+    def _calculate_next_steps_confidence(self, next_steps: dict, lead_data: dict, context: dict) -> float:
+        """Calculate confidence score for next steps recommendations"""
+        confidence = 60.0  # Base confidence
+        
+        # Increase confidence based on data completeness
+        completeness = self._calculate_data_completeness(lead_data)
+        confidence += (completeness / 100) * 20
+        
+        # Increase confidence if stage is specified
+        if context.get('current_stage') and context['current_stage'] != 'unknown':
+            confidence += 10
+        
+        # Increase confidence if constraints are provided
+        if context.get('constraints'):
+            confidence += 10
+        
+        return min(confidence, 100.0)
+    
+    def _get_default_next_steps(self) -> dict:
+        """Return default next steps when generation fails"""
+        return {
+            "immediate_actions": [
+                {
+                    "action": "Schedule follow-up call with prospect",
+                    "timeline": "within 2-3 business days",
+                    "priority": "high",
+                    "effort": "low",
+                    "expected_outcome": "Maintain engagement and gather more information"
+                }
+            ],
+            "follow_up_sequence": [
+                {
+                    "step": 1,
+                    "action": "Send personalized follow-up email",
+                    "timing": "within 24 hours",
+                    "method": "email"
+                },
+                {
+                    "step": 2,
+                    "action": "Make follow-up phone call",
+                    "timing": "2-3 days after email",
+                    "method": "phone"
+                }
+            ],
+            "preparation_tasks": [
+                "Research company background and recent news",
+                "Prepare relevant case studies",
+                "Identify key stakeholders"
+            ],
+            "success_metrics": [
+                "Response rate to follow-up communications",
+                "Meeting acceptance rate",
+                "Information gathered per interaction"
+            ],
+            "contingency_plans": [
+                "If no response, try different communication channel",
+                "If not interested, ask for referrals",
+                "If timing is bad, schedule future follow-up"
+            ],
+            "confidence_score": 50.0,
+            "generated_at": None
         }
