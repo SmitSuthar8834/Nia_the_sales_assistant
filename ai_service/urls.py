@@ -16,6 +16,9 @@ urlpatterns = [
     # Main analysis endpoint
     path('analyze/', views.AnalyzeConversationView.as_view(), name='analyze_conversation'),
     
+    # Debug endpoint for testing
+    path('debug-test/', views.DebugTestView.as_view(), name='debug_test'),
+    
     # Dedicated extraction endpoints
     path('extract-lead/', views.ExtractLeadInfoView.as_view(), name='extract_lead_info'),
     path('extract-entities/', views.ExtractEntitiesView.as_view(), name='extract_entities'),

@@ -1,0 +1,480 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIA - Neural Intelligence Assistant | AI-Powered Sales Assistant</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'images/nia-logo.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="{% static 'images/nia-logo.jpg' %}" alt="NIA Logo" class="logo-image">
+                <span class="logo-text">NIA</span>
+            </div>
+            <nav class="nav">
+                <a href="#" class="nav-link active" data-view="leads">Leads</a>
+                <a href="#" class="nav-link" data-view="create">Create Lead</a>
+                <a href="#" class="nav-link" data-view="analytics">Analytics</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <img src="{% static 'images/nia-logo.jpg' %}" alt="NIA Logo" class="welcome-logo">
+                <div class="welcome-text">
+                    <h1>Welcome to NIA</h1>
+                    <p class="welcome-subtitle">Neural Intelligence Assistant - Your AI-Powered Sales Companion</p>
+                    <p class="welcome-description">Transform your sales conversations into actionable insights with advanced AI analysis</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lead List View -->
+        <div id="leads-view" class="view">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Lead Management</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter Controls -->
+                    <div class="lead-controls mb-4">
+                        <div class="search-filter-row">
+                            <div class="search-box">
+                                <input 
+                                    type="text" 
+                                    id="lead-search" 
+                                    class="form-input" 
+                                    placeholder="Search leads by company, contact, or email..."
+                                    onkeyup="handleLeadSearch()"
+                                >
+                                <span class="search-icon">🔍</span>
+                            </div>
+                            <div class="filter-controls">
+                                <select id="status-filter" class="form-select" onchange="handleFilterChange()">
+                                    <option value="">All Statuses</option>
+                                    <option value="new">New</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="qualified">Qualified</option>
+                                    <option value="converted">Converted</option>
+                                    <option value="lost">Lost</option>
+                                </select>
+                                <select id="score-filter" class="form-select" onchange="handleFilterChange()">
+                                    <option value="">All Scores</option>
+                                    <option value="high">High Score (70%+)</option>
+                                    <option value="medium">Medium Score (40-69%)</option>
+                                    <option value="low">Low Score (<40%)</option>
+                                </select>
+                                <select id="sort-by" class="form-select" onchange="handleSortChange()">
+                                    <option value="created_at">Sort by Date</option>
+                                    <option value="score">Sort by Score</option>
+                                    <option value="company_name">Sort by Company</option>
+                                    <option value="status">Sort by Status</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button class="btn btn-primary" onclick="showCreateForm()">
+                                <span>+</span> Create New Lead
+                            </button>
+                            <button class="btn btn-outline" onclick="refreshLeads()">
+                                <span>↻</span> Refresh
+                            </button>
+                            <button class="btn btn-outline" onclick="exportLeads()">
+                                <span>📊</span> Export
+                            </button>
+                            <button class="btn btn-outline" onclick="toggleViewMode()">
+                                <span id="view-mode-icon">📋</span> <span id="view-mode-text">List View</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="leads-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        Loading leads...
+                    </div>
+                    
+                    <!-- Leads List -->
+                    <div id="leads-list" class="lead-list">
+                        <!-- Leads will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Lead View -->
+        <div id="create-view" class="view hidden">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Create New Lead</h2>
+                </div>
+                <div class="card-body">
+                    <form id="create-lead-form">
+                        <div class="form-group">
+                            <label class="form-label" for="conversation-text">Conversation Notes</label>
+                            <textarea 
+                                id="conversation-text" 
+                                class="form-textarea" 
+                                placeholder="Paste your conversation transcript or notes here. NIA will analyze this to extract lead information and provide recommendations..."
+                                rows="8"
+                                required
+                            ></textarea>
+                        </div>
+                        
+                        <div class="grid grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="lead-source">Lead Source</label>
+                                <select id="lead-source" class="form-select">
+                                    <option value="">Select source...</option>
+                                    <option value="phone_call">Phone Call</option>
+                                    <option value="email">Email</option>
+                                    <option value="meeting">Meeting</option>
+                                    <option value="website">Website</option>
+                                    <option value="referral">Referral</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="urgency">Urgency Level</label>
+                                <select id="urgency" class="form-select">
+                                    <option value="">Auto-detect</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" class="btn btn-primary">
+                                <span>🤖</span> Analyze & Create Lead
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="testAPIConnection()">
+                                🔧 Test API
+                            </button>
+                            <button type="button" class="btn btn-outline" onclick="showLeadsView()">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Analysis Results -->
+                    <div id="analysis-results" class="hidden mt-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">AI Analysis Results</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="analysis-content">
+                                    <!-- Analysis results will be populated here -->
+                                </div>
+                                <div class="action-buttons mt-3">
+                                    <button class="btn btn-success" onclick="confirmCreateLead()">
+                                        ✓ Create Lead
+                                    </button>
+                                    <button class="btn btn-outline" onclick="hideAnalysisResults()">
+                                        Edit Conversation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lead Detail View -->
+        <div id="detail-view" class="view hidden">
+            <div class="card">
+                <div class="card-header">
+                    <div class="detail-header">
+                        <div class="detail-title-section">
+                            <h2 class="card-title" id="detail-company-name">Lead Details</h2>
+                            <div class="lead-status-badge" id="detail-status-badge">
+                                <!-- Status badge will be populated here -->
+                            </div>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn btn-primary" onclick="editLead()">
+                                <span>✏️</span> Edit
+                            </button>
+                            <button class="btn btn-success" onclick="convertToOpportunity()">
+                                <span>🎯</span> Convert
+                            </button>
+                            <button class="btn btn-outline" onclick="refreshInsights()">
+                                <span>🔄</span> Refresh AI
+                            </button>
+                            <button class="btn btn-outline" onclick="showLeadsView()">
+                                ← Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Lead Overview Cards -->
+                    <div class="lead-overview-grid mb-4">
+                        <div class="overview-card">
+                            <h4>Lead Score</h4>
+                            <div id="detail-lead-score" class="score-display">
+                                <!-- Score will be populated here -->
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <h4>Last Contact</h4>
+                            <div id="detail-last-contact" class="date-display">
+                                <!-- Date will be populated here -->
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <h4>Source</h4>
+                            <div id="detail-source" class="source-display">
+                                <!-- Source will be populated here -->
+                            </div>
+                        </div>
+                        <div class="overview-card">
+                            <h4>Next Action</h4>
+                            <div id="detail-next-action" class="action-display">
+                                <!-- Next action will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabbed Content -->
+                    <div class="detail-tabs">
+                        <div class="tab-nav">
+                            <button class="tab-button active" onclick="showDetailTab('info')">
+                                📋 Lead Information
+                            </button>
+                            <button class="tab-button" onclick="showDetailTab('conversation')">
+                                💬 Conversation History
+                            </button>
+                            <button class="tab-button" onclick="showDetailTab('insights')">
+                                🤖 AI Insights
+                            </button>
+                            <button class="tab-button" onclick="showDetailTab('activity')">
+                                📈 Activity Timeline
+                            </button>
+                        </div>
+
+                        <!-- Lead Information Tab -->
+                        <div id="info-tab" class="tab-content active">
+                            <div class="grid grid-2">
+                                <div class="info-section">
+                                    <h4>Company Information</h4>
+                                    <div id="company-info" class="info-content">
+                                        <!-- Company info will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="info-section">
+                                    <h4>Contact Information</h4>
+                                    <div id="contact-info" class="info-content">
+                                        <!-- Contact info will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="info-section">
+                                    <h4>Requirements & Pain Points</h4>
+                                    <div id="requirements-info" class="info-content">
+                                        <!-- Requirements will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="info-section">
+                                    <h4>Budget & Timeline</h4>
+                                    <div id="budget-timeline-info" class="info-content">
+                                        <!-- Budget and timeline will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conversation History Tab -->
+                        <div id="conversation-tab" class="tab-content hidden">
+                            <div class="conversation-section">
+                                <div class="conversation-header">
+                                    <h4>Conversation History</h4>
+                                    <button class="btn btn-outline btn-sm" onclick="addConversationNote()">
+                                        <span>+</span> Add Note
+                                    </button>
+                                </div>
+                                <div id="conversation-history" class="conversation-list">
+                                    <!-- Conversation history will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Insights Tab -->
+                        <div id="insights-tab" class="tab-content hidden">
+                            <div class="insights-section">
+                                <!-- Loading State -->
+                                <div id="insights-loading" class="loading hidden">
+                                    <div class="spinner"></div>
+                                    Generating AI insights...
+                                </div>
+                                
+                                <!-- Insights Content -->
+                                <div id="insights-content" class="insights-grid">
+                                    <!-- AI insights will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Activity Timeline Tab -->
+                        <div id="activity-tab" class="tab-content hidden">
+                            <div class="activity-section">
+                                <h4>Activity Timeline</h4>
+                                <div id="activity-timeline" class="timeline">
+                                    <!-- Activity timeline will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics View -->
+        <div id="analytics-view" class="view hidden">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Lead Analytics</h2>
+                </div>
+                <div class="card-body">
+                    <div id="analytics-content">
+                        <div class="grid grid-3">
+                            <div class="insight-card">
+                                <h3 class="insight-title">Total Leads</h3>
+                                <div id="total-leads" class="text-center" style="font-size: 2rem; font-weight: bold; color: var(--primary-color);">-</div>
+                            </div>
+                            <div class="insight-card">
+                                <h3 class="insight-title">High Quality Leads</h3>
+                                <div id="high-quality-leads" class="text-center" style="font-size: 2rem; font-weight: bold; color: var(--success-color);">-</div>
+                            </div>
+                            <div class="insight-card">
+                                <h3 class="insight-title">Average Lead Score</h3>
+                                <div id="avg-lead-score" class="text-center" style="font-size: 2rem; font-weight: bold; color: var(--warning-color);">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Edit Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Lead</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-lead-form">
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-company-name">Company Name</label>
+                            <input type="text" id="edit-company-name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-status">Status</label>
+                            <select id="edit-status" class="form-select">
+                                <option value="new">New</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="qualified">Qualified</option>
+                                <option value="converted">Converted</option>
+                                <option value="lost">Lost</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contact-name">Contact Name</label>
+                            <input type="text" id="edit-contact-name" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contact-email">Contact Email</label>
+                            <input type="email" id="edit-contact-email" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contact-phone">Contact Phone</label>
+                            <input type="tel" id="edit-contact-phone" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-industry">Industry</label>
+                            <input type="text" id="edit-industry" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-notes">Notes</label>
+                        <textarea id="edit-notes" class="form-textarea" rows="4"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Note Modal -->
+    <div id="note-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Conversation Note</h3>
+                <button class="modal-close" onclick="closeNoteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-note-form">
+                    <div class="form-group">
+                        <label class="form-label" for="note-type">Note Type</label>
+                        <select id="note-type" class="form-select">
+                            <option value="call">Phone Call</option>
+                            <option value="email">Email</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="note">General Note</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="note-content">Note Content</label>
+                        <textarea id="note-content" class="form-textarea" rows="6" 
+                                  placeholder="Enter conversation details, outcomes, next steps, etc."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="note-outcome">Outcome</label>
+                        <select id="note-outcome" class="form-select">
+                            <option value="">Select outcome...</option>
+                            <option value="positive">Positive</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="negative">Negative</option>
+                            <option value="follow_up_needed">Follow-up Needed</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">Add Note</button>
+                        <button type="button" class="btn btn-outline" onclick="closeNoteModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px;">
+        <!-- Alerts will be dynamically added here -->
+    </div>
+
+    <!-- CSRF Token for AJAX requests -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/ui.js' %}"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

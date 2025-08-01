@@ -920,6 +920,7 @@ class GeminiAIService:
             'people': [],
             'emails': [],
             'phones': [],
+            'phone_numbers': [],  # Alias for phones for backward compatibility
             'monetary_amounts': [],
             'dates': [],
             'technologies': []
@@ -931,13 +932,16 @@ class GeminiAIService:
         
         # Phone pattern (various formats)
         phone_pattern = r'(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}'
-        entities['phones'] = re.findall(phone_pattern, text)
+        phone_numbers = re.findall(phone_pattern, text)
+        entities['phones'] = phone_numbers
+        entities['phone_numbers'] = phone_numbers  # Alias for backward compatibility
         
         # Monetary amounts
         money_pattern = r'\$[\d,]+(?:\.\d{2})?|\b\d+(?:,\d{3})*(?:\.\d{2})?\s*(?:dollars?|USD|k|K|million|M|billion|B)\b'
         entities['monetary_amounts'] = re.findall(money_pattern, text, re.IGNORECASE)
         
-        # Use AI for more complex entity extraction
+        # Use AI for more complex entity extraction (with fallback for quota issues)
+        ai_extraction_successful = False
         try:
             ai_entities = self._extract_entities_with_ai(text)
             for entity_type, values in ai_entities.items():
@@ -945,8 +949,16 @@ class GeminiAIService:
                     entities[entity_type].extend(values)
                     # Remove duplicates
                     entities[entity_type] = list(set(entities[entity_type]))
+            ai_extraction_successful = True
         except Exception as e:
-            logger.warning(f"AI entity extraction failed: {e}")
+            logger.warning(f"AI entity extraction failed, using pattern matching only: {e}")
+        
+        # Always run pattern matching as fallback or supplement
+        self._extract_entities_with_patterns(text, entities)
+        
+        # Ensure all keys have unique values and remove empty strings
+        for key in entities:
+            entities[key] = list(set([item for item in entities[key] if item and item.strip()]))
         
         return entities
     
@@ -973,6 +985,42 @@ class GeminiAIService:
             response_text = response_text[3:-3].strip()
         
         return json.loads(response_text)
+    
+    def _extract_entities_with_patterns(self, text: str, entities: Dict[str, List[str]]) -> None:
+        """Fallback pattern-based entity extraction when AI is unavailable"""
+        # Basic company patterns - look for company suffixes and extract the company name
+        company_suffixes = ['Corp', 'Corporation', 'Inc', 'Incorporated', 'LLC', 'Ltd', 'Limited', 'Company', 'Co']
+        
+        # Find all potential company mentions
+        for suffix in company_suffixes:
+            # Pattern to find "Word Word Suffix" format
+            pattern = rf'\b([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*)\s+{re.escape(suffix)}\.?\b'
+            matches = re.findall(pattern, text)
+            for match in matches:
+                # Clean up and validate the company name
+                company_name = f"{match.strip()} {suffix}"
+                if len(company_name.split()) <= 4:  # Reasonable company name length
+                    entities['companies'].append(company_name)
+        
+        # Basic person name patterns (Title + Name)
+        name_pattern = r'\b(?:Mr\.?|Mrs\.?|Ms\.?|Dr\.?|Prof\.?)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b'
+        people = re.findall(name_pattern, text)
+        entities['people'].extend(people)
+        
+        # Common technology terms
+        tech_keywords = ['CRM', 'ERP', 'API', 'SaaS', 'cloud', 'software', 'platform', 'system', 'database', 'analytics']
+        for keyword in tech_keywords:
+            if keyword.lower() in text.lower():
+                entities['technologies'].append(keyword)
+        
+        # Basic date patterns
+        date_pattern = r'\b(?:Q[1-4]\s+\d{4}|\d{1,2}/\d{1,2}/\d{4}|\d{4}-\d{2}-\d{2}|January|February|March|April|May|June|July|August|September|October|November|December)\b'
+        dates = re.findall(date_pattern, text, re.IGNORECASE)
+        entities['dates'].extend(dates)
+        
+        # Remove duplicates
+        for key in entities:
+            entities[key] = list(set(entities[key]))
     
     def validate_extracted_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """

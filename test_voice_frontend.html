@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Service Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.active {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.ended {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 NIA Voice Service Test Interface</h1>
+        
+        <!-- Authentication Section -->
+        <div class="section">
+            <h3>Authentication</h3>
+            <p>For testing purposes, we'll simulate authentication.</p>
+            <button onclick="simulateLogin()">Simulate Login</button>
+            <span id="authStatus" class="info">Not authenticated</span>
+        </div>
+
+        <!-- Call Management Section -->
+        <div class="section">
+            <h3>Call Management</h3>
+            <div>
+                <input type="text" id="callerIdInput" placeholder="Caller ID (optional)" value="555-TEST">
+                <button onclick="initiateCall()" id="initiateBtn">Start Call</button>
+                <button onclick="endCall()" id="endBtn" disabled>End Call</button>
+            </div>
+            <div id="callStatus" class="status">No active call</div>
+            <div>
+                <strong>Current Session ID:</strong> <span id="sessionId">None</span>
+            </div>
+        </div>
+
+        <!-- Voice Configuration Section -->
+        <div class="section">
+            <h3>Voice Configuration</h3>
+            <div>
+                <label>Language:</label>
+                <select id="languageSelect">
+                    <option value="en-US">English (US)</option>
+                    <option value="es-ES">Spanish (Spain)</option>
+                    <option value="fr-FR">French (France)</option>
+                    <option value="de-DE">German (Germany)</option>
+                </select>
+                <label>Voice:</label>
+                <select id="voiceSelect">
+                    <option value="en-US-Wavenet-D">English Wavenet D</option>
+                    <option value="es-ES-Wavenet-B">Spanish Wavenet B</option>
+                    <option value="fr-FR-Wavenet-A">French Wavenet A</option>
+                </select>
+                <button onclick="updateVoiceConfig()">Update Config</button>
+                <button onclick="loadVoiceConfig()">Load Config</button>
+            </div>
+        </div>
+
+        <!-- Session Management Section -->
+        <div class="section">
+            <h3>Session Management</h3>
+            <button onclick="loadUserSessions()">Load My Sessions</button>
+            <button onclick="getSessionStatus()">Get Current Status</button>
+            <div id="sessionsContainer"></div>
+        </div>
+
+        <!-- WebSocket Connection Section -->
+        <div class="section">
+            <h3>WebSocket Connection (Real-time)</h3>
+            <button onclick="connectWebSocket()" id="wsConnectBtn">Connect WebSocket</button>
+            <button onclick="disconnectWebSocket()" id="wsDisconnectBtn" disabled>Disconnect</button>
+            <div id="wsStatus" class="info">WebSocket not connected</div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="section">
+            <h3>Activity Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="activityLog" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let websocket = null;
+        let isAuthenticated = false;
+
+        // Logging function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('activityLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logDiv.textContent += logEntry;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('activityLog').textContent = '';
+        }
+
+        // Simulate authentication for testing
+        function simulateLogin() {
+            isAuthenticated = true;
+            document.getElementById('authStatus').textContent = 'Authenticated (simulated)';
+            document.getElementById('authStatus').className = 'success';
+            log('Authentication simulated successfully', 'success');
+        }
+
+        // API call helper
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const url = `http://localhost:8000/api/voice${endpoint}`;
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    // In a real app, you'd include authentication headers here
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            };
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                log(`Making ${method} request to ${endpoint}`, 'info');
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log(`API call successful: ${JSON.stringify(result)}`, 'success');
+                    return result;
+                } else {
+                    log(`API call failed: ${response.status} - ${JSON.stringify(result)}`, 'error');
+                    throw new Error(`API call failed: ${response.status}`);
+                }
+            } catch (error) {
+                log(`API call error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Call management functions
+        async function initiateCall() {
+            if (!isAuthenticated) {
+                alert('Please simulate login first');
+                return;
+            }
+
+            try {
+                const callerId = document.getElementById('callerIdInput').value;
+                const result = await apiCall('/initiate/', 'POST', { caller_id: callerId });
+                
+                currentSessionId = result.session_id;
+                document.getElementById('sessionId').textContent = currentSessionId;
+                document.getElementById('callStatus').textContent = `Call Active - ${result.status}`;
+                document.getElementById('callStatus').className = 'status active';
+                
+                document.getElementById('initiateBtn').disabled = true;
+                document.getElementById('endBtn').disabled = false;
+                
+                log(`Call initiated successfully. Session: ${currentSessionId}`, 'success');
+            } catch (error) {
+                log(`Failed to initiate call: ${error.message}`, 'error');
+            }
+        }
+
+        async function endCall() {
+            if (!currentSessionId) {
+                alert('No active call to end');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/end/', 'POST', { session_id: currentSessionId });
+                
+                document.getElementById('callStatus').textContent = `Call Ended - Duration: ${result.duration}`;
+                document.getElementById('callStatus').className = 'status ended';
+                
+                document.getElementById('initiateBtn').disabled = false;
+                document.getElementById('endBtn').disabled = true;
+                
+                log(`Call ended successfully. Duration: ${result.duration}`, 'success');
+                currentSessionId = null;
+                document.getElementById('sessionId').textContent = 'None';
+            } catch (error) {
+                log(`Failed to end call: ${error.message}`, 'error');
+            }
+        }
+
+        async function getSessionStatus() {
+            if (!currentSessionId) {
+                alert('No active session');
+                return;
+            }
+
+            try {
+                const result = await apiCall(`/session/${currentSessionId}/status/`);
+                log(`Session status: ${JSON.stringify(result)}`, 'info');
+            } catch (error) {
+                log(`Failed to get session status: ${error.message}`, 'error');
+            }
+        }
+
+        // Voice configuration functions
+        async function loadVoiceConfig() {
+            if (!isAuthenticated) {
+                alert('Please simulate login first');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/config/');
+                document.getElementById('languageSelect').value = result.language_code;
+                document.getElementById('voiceSelect').value = result.voice_name;
+                log(`Voice configuration loaded: ${result.language_code}, ${result.voice_name}`, 'info');
+            } catch (error) {
+                log(`Failed to load voice config: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateVoiceConfig() {
+            if (!isAuthenticated) {
+                alert('Please simulate login first');
+                return;
+            }
+
+            try {
+                const languageCode = document.getElementById('languageSelect').value;
+                const voiceName = document.getElementById('voiceSelect').value;
+                
+                const result = await apiCall('/config/', 'PUT', {
+                    language_code: languageCode,
+                    voice_name: voiceName
+                });
+                
+                log(`Voice configuration updated successfully`, 'success');
+            } catch (error) {
+                log(`Failed to update voice config: ${error.message}`, 'error');
+            }
+        }
+
+        // Session management functions
+        async function loadUserSessions() {
+            if (!isAuthenticated) {
+                alert('Please simulate login first');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/sessions/');
+                const container = document.getElementById('sessionsContainer');
+                
+                if (result.sessions && result.sessions.length > 0) {
+                    let html = '<h4>Recent Sessions:</h4><ul>';
+                    result.sessions.forEach(session => {
+                        html += `<li>
+                            <strong>ID:</strong> ${session.session_id.substring(0, 8)}... 
+                            <strong>Status:</strong> ${session.status} 
+                            <strong>Start:</strong> ${new Date(session.start_time).toLocaleString()}
+                            ${session.duration ? `<strong>Duration:</strong> ${session.duration}` : ''}
+                        </li>`;
+                    });
+                    html += '</ul>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p>No sessions found</p>';
+                }
+                
+                log(`Loaded ${result.count} user sessions`, 'info');
+            } catch (error) {
+                log(`Failed to load user sessions: ${error.message}`, 'error');
+            }
+        }
+
+        // WebSocket functions
+        function connectWebSocket() {
+            if (!currentSessionId) {
+                alert('Please start a call first to connect WebSocket');
+                return;
+            }
+
+            try {
+                const wsUrl = `ws://localhost:8000/ws/voice/${currentSessionId}/`;
+                websocket = new WebSocket(wsUrl);
+
+                websocket.onopen = function(event) {
+                    log('WebSocket connected successfully', 'success');
+                    document.getElementById('wsStatus').textContent = 'WebSocket connected';
+                    document.getElementById('wsStatus').className = 'success';
+                    document.getElementById('wsConnectBtn').disabled = true;
+                    document.getElementById('wsDisconnectBtn').disabled = false;
+                };
+
+                websocket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    log(`WebSocket message received: ${JSON.stringify(data)}`, 'info');
+                };
+
+                websocket.onclose = function(event) {
+                    log('WebSocket connection closed', 'info');
+                    document.getElementById('wsStatus').textContent = 'WebSocket disconnected';
+                    document.getElementById('wsStatus').className = 'info';
+                    document.getElementById('wsConnectBtn').disabled = false;
+                    document.getElementById('wsDisconnectBtn').disabled = true;
+                };
+
+                websocket.onerror = function(error) {
+                    log(`WebSocket error: ${error}`, 'error');
+                };
+            } catch (error) {
+                log(`Failed to connect WebSocket: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Voice Service Test Interface loaded', 'info');
+            log('Note: This is a test interface. In production, proper authentication would be required.', 'info');
+        });
+    </script>
+</body>
+</html>

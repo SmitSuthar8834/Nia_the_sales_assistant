@@ -210,8 +210,35 @@ class GeminiAIServiceTestCase(TestCase):
             
             self.assertIn('john@example.com', entities['emails'])
             self.assertIn('555-123-4567', entities['phones'])
+            self.assertIn('555-123-4567', entities['phone_numbers'])  # Test alias
             self.assertIn('$50,000', entities['monetary_amounts'])
             self.assertIn('John Doe', entities['people'])
+    
+    def test_extract_entities_with_fallback(self):
+        """Test entity extraction with AI fallback to pattern matching"""
+        text = "John Smith from Acme Corp Inc contacted us about their CRM needs in Q2 2024."
+        
+        # Mock AI extraction to fail
+        with patch.object(self.ai_service, '_extract_entities_with_ai') as mock_ai_extract:
+            mock_ai_extract.side_effect = Exception("API quota exceeded")
+            
+            entities = self.ai_service.extract_entities(text)
+            
+            # Should still extract entities using pattern matching
+            self.assertIn('Acme Corp Inc', entities['companies'])
+            self.assertIn('CRM', entities['technologies'])
+            self.assertIn('Q2 2024', entities['dates'])
+    
+    def test_extract_entities_pattern_matching(self):
+        """Test pattern-based entity extraction fallback"""
+        text = "Dr. Sarah Johnson from TechStart LLC mentioned their API integration needs."
+        entities = {'companies': [], 'people': [], 'technologies': [], 'dates': []}
+        
+        self.ai_service._extract_entities_with_patterns(text, entities)
+        
+        self.assertIn('TechStart LLC', entities['companies'])
+        self.assertIn('Dr. Sarah Johnson', entities['people'])
+        self.assertIn('API', entities['technologies'])
 
 
 class LeadExtractionAPITestCase(APITestCase):
@@ -721,7 +748,264 @@ class SalesRecommendationsAPITestCase(APITestCase):
 
 
 class LeadExtractionAccuracyTestCase(TestCase):
-    """Test cases for lead extraction accuracy with sample conversations"""
+    """Test cases for AI extraction accuracy and validation"""
+    
+    def setUp(self):
+        self.ai_service = GeminiAIService()
+        self.sample_conversations = [
+            {
+                'text': "Hi, this is John Smith from Acme Corporation. We're looking for a CRM solution to help with our sales process. Our current system is outdated and we need something that can integrate with our existing tools. We have about 50 sales reps and our budget is around $100,000. We'd like to implement this by Q3 2024.",
+                'expected': {
+                    'company_name': 'Acme Corporation',
+                    'contact_name': 'John Smith',
+                    'pain_points': ['outdated system'],
+                    'requirements': ['CRM solution', 'integration'],
+                    'budget_info': '$100,000',
+                    'timeline': 'Q3 2024'
+                }
+            },
+            {
+                'text': "Sarah from TechStart Inc called about automation needs. They have manual processes that are slowing them down. Looking for workflow automation, budget is flexible, need it ASAP.",
+                'expected': {
+                    'company_name': 'TechStart Inc',
+                    'contact_name': 'Sarah',
+                    'pain_points': ['manual processes', 'slowing down'],
+                    'requirements': ['workflow automation'],
+                    'urgency_level': 'high'
+                }
+            }
+        ]
+    
+    @patch('ai_service.services.genai.configure')
+    @patch('ai_service.services.genai.GenerativeModel')
+    def test_lead_extraction_accuracy_comprehensive(self, mock_model, mock_configure):
+        """Test comprehensive lead extraction accuracy"""
+        for i, conversation in enumerate(self.sample_conversations):
+            with self.subTest(conversation=i):
+                # Mock AI response based on expected data
+                expected = conversation['expected']
+                mock_response = MagicMock()
+                mock_response.text = f'''```json
+                {{
+                    "company_name": "{expected.get('company_name', 'null')}",
+                    "contact_details": {{
+                        "name": "{expected.get('contact_name', 'null')}",
+                        "email": null,
+                        "phone": null,
+                        "title": null,
+                        "department": null
+                    }},
+                    "pain_points": {json.dumps(expected.get('pain_points', []))},
+                    "requirements": {json.dumps(expected.get('requirements', []))},
+                    "budget_info": "{expected.get('budget_info', 'null')}",
+                    "timeline": "{expected.get('timeline', 'null')}",
+                    "decision_makers": [],
+                    "industry": null,
+                    "company_size": null,
+                    "urgency_level": "{expected.get('urgency_level', 'null')}",
+                    "current_solution": null,
+                    "competitors_mentioned": []
+                }}
+                ```'''
+                
+                mock_model_instance = MagicMock()
+                mock_model_instance.generate_content.return_value = mock_response
+                mock_model.return_value = mock_model_instance
+                
+                ai_service = GeminiAIService()
+                result = ai_service.extract_lead_info(conversation['text'])
+                
+                # Verify extraction accuracy
+                if expected.get('company_name'):
+                    self.assertEqual(result['company_name'], expected['company_name'])
+                if expected.get('contact_name'):
+                    self.assertEqual(result['contact_details']['name'], expected['contact_name'])
+                if expected.get('pain_points'):
+                    for pain_point in expected['pain_points']:
+                        self.assertIn(pain_point, result['pain_points'])
+                if expected.get('requirements'):
+                    for requirement in expected['requirements']:
+                        self.assertIn(requirement, result['requirements'])
+    
+    def test_data_validation_accuracy(self):
+        """Test data validation accuracy"""
+        test_cases = [
+            {
+                'data': {
+                    'company_name': 'Valid Corp',
+                    'contact_details': {
+                        'name': 'John Doe',
+                        'email': 'john@valid.com',
+                        'phone': '555-123-4567'
+                    },
+                    'pain_points': ['Issue 1'],
+                    'requirements': ['Solution 1']
+                },
+                'expected_valid': True,
+                'expected_score': 85.0  # High score for complete data
+            },
+            {
+                'data': {
+                    'company_name': None,
+                    'contact_details': {
+                        'name': None,
+                        'email': 'invalid-email',
+                        'phone': '123'
+                    },
+                    'pain_points': [],
+                    'requirements': []
+                },
+                'expected_valid': False,
+                'expected_score': 0.0  # Low score for incomplete/invalid data
+            }
+        ]
+        
+        for i, test_case in enumerate(test_cases):
+            with self.subTest(case=i):
+                validation = self.ai_service.validate_extracted_data(test_case['data'])
+                
+                self.assertEqual(validation['is_valid'], test_case['expected_valid'])
+                if test_case['expected_valid']:
+                    self.assertGreaterEqual(validation['data_quality_score'], test_case['expected_score'])
+                else:
+                    self.assertLessEqual(validation['data_quality_score'], test_case['expected_score'])
+    
+    def test_confidence_score_accuracy(self):
+        """Test confidence score calculation accuracy"""
+        # Test with high-quality data
+        high_quality_data = {
+            'company_name': 'Test Corp',
+            'contact_details': {
+                'name': 'John Doe',
+                'email': 'john@test.com',
+                'phone': '555-123-4567',
+                'title': 'CEO'
+            },
+            'pain_points': ['Issue 1', 'Issue 2'],
+            'requirements': ['Solution 1', 'Solution 2'],
+            'budget_info': '$50,000',
+            'timeline': 'Q2 2024',
+            'industry': 'Technology',
+            'decision_makers': ['John Doe']
+        }
+        
+        high_score = self.ai_service._calculate_confidence_score(high_quality_data)
+        self.assertGreaterEqual(high_score, 80.0)
+        
+        # Test with low-quality data
+        low_quality_data = {
+            'company_name': 'Test Corp',
+            'contact_details': {},
+            'pain_points': [],
+            'requirements': []
+        }
+        
+        low_score = self.ai_service._calculate_confidence_score(low_quality_data)
+        self.assertLessEqual(low_score, 30.0)
+        
+        # High quality should score higher than low quality
+        self.assertGreater(high_score, low_score)
+    
+    def test_entity_recognition_accuracy(self):
+        """Test entity recognition accuracy for companies, contacts, and requirements"""
+        test_text = """
+        John Smith, the CTO at TechCorp Inc, mentioned they need a new CRM system. 
+        Their current solution from Salesforce isn't meeting their needs. 
+        Contact him at john.smith@techcorp.com or 555-987-6543. 
+        Budget is around $75,000 and they want to implement by December 2024.
+        """
+        
+        # Mock AI entity extraction
+        with patch.object(self.ai_service, '_extract_entities_with_ai') as mock_ai_extract:
+            mock_ai_extract.return_value = {
+                'companies': ['TechCorp Inc', 'Salesforce'],
+                'people': ['John Smith'],
+                'technologies': ['CRM system'],
+                'dates': ['December 2024']
+            }
+            
+            entities = self.ai_service.extract_entities(test_text)
+            
+            # Verify company recognition
+            self.assertIn('TechCorp Inc', entities['companies'])
+            self.assertIn('Salesforce', entities['companies'])
+            
+            # Verify contact recognition
+            self.assertIn('John Smith', entities['people'])
+            self.assertIn('john.smith@techcorp.com', entities['emails'])
+            self.assertIn('555-987-6543', entities['phones'])
+            
+            # Verify requirement recognition
+            self.assertIn('CRM system', entities['technologies'])
+            
+            # Verify monetary amount recognition
+            self.assertIn('$75,000', entities['monetary_amounts'])
+    
+    def test_extraction_with_missing_information(self):
+        """Test extraction accuracy when information is missing or incomplete"""
+        incomplete_text = "Someone called about needing help with their processes."
+        
+        with patch.object(self.ai_service, '_make_api_call') as mock_api_call:
+            mock_response = MagicMock()
+            mock_response.text = '''```json
+            {
+                "company_name": null,
+                "contact_details": {
+                    "name": null,
+                    "email": null,
+                    "phone": null,
+                    "title": null,
+                    "department": null
+                },
+                "pain_points": ["process issues"],
+                "requirements": ["help with processes"],
+                "budget_info": null,
+                "timeline": null,
+                "decision_makers": [],
+                "industry": null,
+                "company_size": null,
+                "urgency_level": null,
+                "current_solution": null,
+                "competitors_mentioned": []
+            }
+            ```'''
+            mock_api_call.return_value = mock_response
+            
+            result = self.ai_service.extract_lead_info(incomplete_text)
+            
+            # Should handle missing information gracefully
+            self.assertIsNone(result['company_name'])
+            self.assertIsNone(result['contact_details']['name'])
+            self.assertIn('process issues', result['pain_points'])
+            
+            # Confidence should be low for incomplete data
+            self.assertLess(result['extraction_metadata']['confidence_score'], 50.0)
+    
+    def test_extraction_error_handling(self):
+        """Test extraction error handling and fallback mechanisms"""
+        test_text = "Test conversation"
+        
+        # Test JSON parsing error
+        with patch.object(self.ai_service, '_make_api_call') as mock_api_call:
+            mock_response = MagicMock()
+            mock_response.text = "Invalid JSON response"
+            mock_api_call.return_value = mock_response
+            
+            result = self.ai_service.extract_lead_info(test_text)
+            
+            # Should return default structure
+            self.assertIsNone(result['company_name'])
+            self.assertEqual(result['extraction_metadata']['extraction_method'], 'default_fallback')
+        
+        # Test API call error
+        with patch.object(self.ai_service, '_make_api_call') as mock_api_call:
+            mock_api_call.side_effect = Exception("API Error")
+            
+            result = self.ai_service.extract_lead_info(test_text)
+            
+            # Should return default structure
+            self.assertIsNone(result['company_name'])
+            self.assertEqual(result['extraction_metadata']['extraction_method'], 'default_fallback')es for lead extraction accuracy with sample conversations"""
     
     def setUp(self):
         self.ai_service = GeminiAIService()
@@ -758,25 +1042,23 @@ class LeadExtractionAccuracyTestCase(TestCase):
         mock_model_instance.generate_content.return_value = mock_response
         mock_model.return_value = mock_model_instance
         
-        conversation = """
-        Hi Sarah, thanks for taking the time to speak with me today. I understand you're the CTO at TechStart Inc.
+        conversation = """Hi Sarah, thanks for taking the time to speak with me today. I understand you are the CTO at TechStart Inc.
         
-        Sarah: Yes, that's right. We're a software development company with about 75 employees, and we're having some real challenges with our current processes.
+        Sarah: Yes, that is right. We are a software development company with about 75 employees, and we are having some real challenges with our current processes.
         
         What kind of challenges are you facing?
         
-        Sarah: Well, we're still doing a lot of manual data entry, which is eating up our developers' time. We also have major system integration issues - our tools don't talk to each other properly. And frankly, we're worried about scalability as we grow.
+        Sarah: Well, we are still doing a lot of manual data entry, which is eating up our developers time. We also have major system integration issues - our tools do not talk to each other properly. And frankly, we are worried about scalability as we grow.
         
         I see. What would an ideal solution look like for you?
         
-        Sarah: We need something that can automate our workflow, has good API integration capabilities, and is cloud-based so we can scale easily. Our budget is somewhere between $100,000 and $150,000, and we'd need to have everything implemented by Q3 2024.
+        Sarah: We need something that can automate our workflow, has good API integration capabilities, and is cloud-based so we can scale easily. Our budget is somewhere between $100,000 and $150,000, and we would need to have everything implemented by Q3 2024.
         
         Who else would be involved in this decision?
         
-        Sarah: It would be myself and our CEO, Mike Chen. We've looked at Salesforce and HubSpot, but they don't quite fit our specific needs.
+        Sarah: It would be myself and our CEO, Mike Chen. We have looked at Salesforce and HubSpot, but they do not quite fit our specific needs.
         
-        You can reach me at sarah.johnson@techstart.com or call me at 555-987-6543 if you have any follow-up questions.
-        """
+        You can reach me at sarah.johnson@techstart.com or call me at 555-987-6543 if you have any follow-up questions."""
         
         # Create fresh service instance with mocked model
         ai_service = GeminiAIService()
@@ -836,3 +1118,52 @@ class LeadExtractionAccuracyTestCase(TestCase):
         # Confidence should be lower for minimal data
         confidence = result['extraction_metadata']['confidence_score']
         self.assertLessEqual(confidence, 50)  # Should be low confidence
+
+
+class GeminiAIIntegrationTestCase(TestCase):
+    """Integration tests for Gemini AI service with real API calls (requires valid API key)"""
+    
+    def setUp(self):
+        self.ai_service = GeminiAIService()
+    
+    def test_connection_with_valid_key(self):
+        """Test connection to Gemini AI with valid API key"""
+        # Skip if no valid API key is configured
+        try:
+            result = self.ai_service.test_connection()
+            if result['success']:
+                self.assertTrue(result['success'])
+                self.assertIsNotNone(result['response'])
+            else:
+                self.skipTest("No valid Gemini API key configured")
+        except Exception as e:
+            self.skipTest(f"API connection failed: {e}")
+    
+    def test_real_lead_extraction(self):
+        """Test real lead extraction with a sample conversation"""
+        # Skip if quota is exceeded
+        try:
+            sample_conversation = """
+            Hello, this is Mike Johnson from DataTech Solutions. We are a mid-size company 
+            with about 200 employees in the financial services sector. We are currently 
+            struggling with our data management processes and are looking for a comprehensive 
+            solution that can help us automate our workflows and improve data accuracy. 
+            Our budget is around $75,000 and we need to implement something by the end of Q2 2024. 
+            You can reach me at mike.johnson@datatech.com or call 555-123-4567.
+            """
+            
+            result = self.ai_service.extract_lead_info(sample_conversation)
+            
+            # Verify extraction worked
+            self.assertIsNotNone(result)
+            self.assertIn('extraction_metadata', result)
+            
+            # If extraction was successful, verify some basic fields
+            if result.get('company_name'):
+                self.assertIn('DataTech', result['company_name'])
+            
+        except Exception as e:
+            if "quota" in str(e).lower() or "rate limit" in str(e).lower():
+                self.skipTest(f"API quota exceeded: {e}")
+            else:
+                raise
