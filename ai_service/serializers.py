@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Lead, AIInsights, ConversationAnalysis
+from .models import Lead, AIInsights, ConversationAnalysis, Opportunity, OpportunityIntelligence
 
 
 class AIInsightsSerializer(serializers.ModelSerializer):
@@ -236,3 +236,192 @@ class LeadUpdateSerializer(serializers.ModelSerializer):
             analyze_lead_with_ai.delay(instance.id, instance.conversation_history)
         
         return instance
+
+# Opportunity Conversion Intelligence Serializers
+
+class OpportunitySerializer(serializers.ModelSerializer):
+    """Serializer for Opportunity model"""
+    
+    lead_company_name = serializers.CharField(source='lead.company_name', read_only=True)
+    lead_contact_name = serializers.SerializerMethodField()
+    days_to_close = serializers.ReadOnlyField()
+    is_high_value = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Opportunity
+        fields = [
+            'id', 'lead', 'user', 'name', 'description',
+            'estimated_value', 'probability', 'expected_close_date',
+            'sales_cycle_days', 'stage', 'priority',
+            'crm_record_id', 'crm_system',
+            'lead_company_name', 'lead_contact_name',
+            'days_to_close', 'is_high_value',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_lead_contact_name(self, obj):
+        """Get contact name from related lead"""
+        if obj.lead and obj.lead.contact_info:
+            return obj.lead.contact_info.get('name', '')
+        return ''
+
+
+class OpportunityCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating opportunities"""
+    
+    class Meta:
+        model = Opportunity
+        fields = [
+            'lead', 'name', 'description', 'estimated_value',
+            'probability', 'expected_close_date', 'sales_cycle_days',
+            'stage', 'priority', 'crm_record_id', 'crm_system'
+        ]
+    
+    def create(self, validated_data):
+        """Create opportunity and set user from request"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['user'] = request.user
+        return super().create(validated_data)
+
+
+class OpportunityListSerializer(serializers.ModelSerializer):
+    """Simplified serializer for opportunity lists"""
+    
+    lead_company_name = serializers.CharField(source='lead.company_name', read_only=True)
+    lead_contact_name = serializers.SerializerMethodField()
+    days_to_close = serializers.ReadOnlyField()
+    conversion_probability = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Opportunity
+        fields = [
+            'id', 'name', 'estimated_value', 'probability',
+            'expected_close_date', 'stage', 'priority',
+            'lead_company_name', 'lead_contact_name',
+            'days_to_close', 'conversion_probability',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_lead_contact_name(self, obj):
+        """Get contact name from related lead"""
+        if obj.lead and obj.lead.contact_info:
+            return obj.lead.contact_info.get('name', '')
+        return ''
+    
+    def get_conversion_probability(self, obj):
+        """Get conversion probability from intelligence if available"""
+        if hasattr(obj, 'intelligence'):
+            return obj.intelligence.conversion_probability
+        return None
+
+
+class OpportunityIntelligenceSerializer(serializers.ModelSerializer):
+    """Serializer for OpportunityIntelligence model"""
+    
+    opportunity_name = serializers.CharField(source='opportunity.name', read_only=True)
+    opportunity_stage = serializers.CharField(source='opportunity.stage', read_only=True)
+    is_high_probability = serializers.ReadOnlyField()
+    needs_attention = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = OpportunityIntelligence
+        fields = [
+            'id', 'opportunity', 'conversion_probability',
+            'conversion_likelihood', 'conversion_confidence',
+            'predicted_deal_size_min', 'predicted_deal_size_max',
+            'predicted_close_date', 'sales_cycle_prediction_days',
+            'recommended_stage', 'next_stage_probability',
+            'stage_advancement_timeline', 'overall_risk_level',
+            'risk_factors', 'risk_mitigation_strategies',
+            'competitive_threats', 'competitive_advantages',
+            'win_strategy', 'similar_deals_count',
+            'historical_win_rate', 'benchmark_metrics',
+            'priority_actions', 'next_best_actions',
+            'resource_requirements', 'opportunity_name',
+            'opportunity_stage', 'is_high_probability',
+            'needs_attention', 'last_analyzed', 'created_at'
+        ]
+        read_only_fields = ['id', 'last_analyzed', 'created_at']
+
+
+class OpportunityWithIntelligenceSerializer(serializers.ModelSerializer):
+    """Serializer for Opportunity with embedded intelligence data"""
+    
+    intelligence = OpportunityIntelligenceSerializer(read_only=True)
+    lead_company_name = serializers.CharField(source='lead.company_name', read_only=True)
+    lead_contact_name = serializers.SerializerMethodField()
+    days_to_close = serializers.ReadOnlyField()
+    is_high_value = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Opportunity
+        fields = [
+            'id', 'lead', 'user', 'name', 'description',
+            'estimated_value', 'probability', 'expected_close_date',
+            'sales_cycle_days', 'stage', 'priority',
+            'crm_record_id', 'crm_system',
+            'lead_company_name', 'lead_contact_name',
+            'days_to_close', 'is_high_value',
+            'intelligence', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_lead_contact_name(self, obj):
+        """Get contact name from related lead"""
+        if obj.lead and obj.lead.contact_info:
+            return obj.lead.contact_info.get('name', '')
+        return ''
+
+
+# Enhanced Lead Serializer with Opportunity Conversion Intelligence
+
+class LeadWithOpportunityIntelligenceSerializer(serializers.ModelSerializer):
+    """Enhanced lead serializer with opportunity conversion intelligence"""
+    
+    ai_insights = AIInsightsSerializer(read_only=True)
+    opportunities = OpportunityListSerializer(many=True, read_only=True)
+    contact_name = serializers.ReadOnlyField()
+    contact_email = serializers.ReadOnlyField()
+    contact_phone = serializers.ReadOnlyField()
+    
+    # Opportunity conversion fields
+    should_convert_to_opportunity = serializers.SerializerMethodField()
+    conversion_readiness_score = serializers.SerializerMethodField()
+    recommended_opportunity_value = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Lead
+        fields = [
+            'id', 'company_name', 'industry', 'company_size',
+            'contact_info', 'status', 'source',
+            'pain_points', 'requirements', 'budget_info',
+            'timeline', 'decision_makers', 'urgency_level',
+            'current_solution', 'competitors_mentioned',
+            'crm_record_id', 'crm_system',
+            'contact_name', 'contact_email', 'contact_phone',
+            'ai_insights', 'opportunities',
+            'should_convert_to_opportunity', 'conversion_readiness_score',
+            'recommended_opportunity_value',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_should_convert_to_opportunity(self, obj):
+        """Check if lead should be converted to opportunity"""
+        if hasattr(obj, 'ai_insights') and obj.ai_insights:
+            return obj.ai_insights.should_convert_to_opportunity
+        return False
+    
+    def get_conversion_readiness_score(self, obj):
+        """Get opportunity conversion readiness score"""
+        if hasattr(obj, 'ai_insights') and obj.ai_insights:
+            return obj.ai_insights.opportunity_conversion_score
+        return 0.0
+    
+    def get_recommended_opportunity_value(self, obj):
+        """Get recommended opportunity value from AI insights"""
+        if hasattr(obj, 'ai_insights') and obj.ai_insights:
+            return obj.ai_insights.estimated_deal_size
+        return None

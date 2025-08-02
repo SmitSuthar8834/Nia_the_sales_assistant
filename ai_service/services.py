@@ -7,6 +7,16 @@ import time
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from .quota_tracker import quota_tracker
+from .ai_context_guidelines import (
+    SALES_CONTEXT, AI_GUIDELINES, PROMPT_TEMPLATES,
+    get_context_for_industry, get_confidence_guidelines,
+    get_objection_handling_strategies, get_recommendation_guidelines,
+    build_context_prompt
+)
+from .ai_config import (
+    get_company_config, get_sales_methodology, get_ai_behavior_config,
+    get_industry_config, get_scoring_config
+)
 
 logger = logging.getLogger(__name__)
 
@@ -411,10 +421,33 @@ class GeminiAIService:
         Returns:
             dict: Lead quality analysis with score and breakdown
         """
-        prompt = f"""
-        Analyze this lead and provide a comprehensive quality assessment:
+        # Get industry-specific context
+        industry = lead_data.get('industry', 'technology')
+        industry_context = get_context_for_industry(industry)
+        confidence_guidelines = get_confidence_guidelines()
         
-        Lead Data: {json.dumps(lead_data, indent=2)}
+        # Build context-aware prompt
+        base_prompt = build_context_prompt('lead_quality_score', {
+            'industry': industry,
+            'company_size': lead_data.get('company_size', 'Unknown'),
+            'typical_sales_cycle': industry_context.get('typical_sales_cycle', '3-6 months')
+        })
+        
+        prompt = f"""
+        {base_prompt}
+        
+        Lead Data to Analyze: {json.dumps(lead_data, indent=2)}
+        
+        Industry Context:
+        - Common pain points: {', '.join(industry_context.get('common_pain_points', []))}
+        - Typical decision makers: {', '.join(industry_context.get('decision_makers', []))}
+        - Sales approach: {industry_context.get('sales_approach', 'Consultative')}
+        - Typical sales cycle: {industry_context.get('typical_sales_cycle', '3-6 months')}
+        
+        Confidence Scoring Guidelines:
+        High confidence indicators: {', '.join(confidence_guidelines['high_confidence_indicators'])}
+        Medium confidence indicators: {', '.join(confidence_guidelines['medium_confidence_indicators'])}
+        Low confidence indicators: {', '.join(confidence_guidelines['low_confidence_indicators'])}
         
         Provide analysis in this EXACT JSON format:
         {{
@@ -437,8 +470,7 @@ class GeminiAIService:
             "next_best_action": "specific recommended next step"
         }}
         
-        Base scoring on: data completeness, engagement signals, budget indicators, 
-        timeline urgency, decision-making authority, and pain point severity.
+        Base your analysis on our company's strengths and the specific industry context provided.
         """
         
         try:
@@ -470,42 +502,67 @@ class GeminiAIService:
         """
         quality_info = quality_score or self.calculate_lead_quality_score(lead_data)
         
+        # Get industry-specific context and objection handling strategies
+        industry = lead_data.get('industry', 'technology')
+        industry_context = get_context_for_industry(industry)
+        objection_strategies = get_objection_handling_strategies()
+        
+        # Build context-aware prompt
+        base_prompt = build_context_prompt('sales_strategy', {
+            'industry': industry,
+            'quality_tier': quality_info.get('quality_tier', 'medium'),
+            'company_size': lead_data.get('company_size', 'Unknown')
+        })
+        
         prompt = f"""
-        Create a tailored sales strategy for this lead:
+        {base_prompt}
         
         Lead Data: {json.dumps(lead_data, indent=2)}
         Quality Assessment: {json.dumps(quality_info, indent=2)}
         
+        Industry-Specific Context:
+        - Key messaging themes: {', '.join(industry_context.get('key_messaging', []))}
+        - Decision makers: {', '.join(industry_context.get('decision_makers', []))}
+        - Sales approach: {industry_context.get('sales_approach', 'Consultative')}
+        - Common pain points: {', '.join(industry_context.get('common_pain_points', []))}
+        
+        Objection Handling Strategies:
+        Budget concerns: {', '.join(objection_strategies['budget_concerns']['strategies'])}
+        Timing concerns: {', '.join(objection_strategies['timing_concerns']['strategies'])}
+        Authority concerns: {', '.join(objection_strategies['authority_concerns']['strategies'])}
+        Competition concerns: {', '.join(objection_strategies['competition_concerns']['strategies'])}
+        
         Provide strategy in this EXACT JSON format:
         {{
             "primary_strategy": "consultative|solution|relationship|competitive",
-            "approach_rationale": "why this strategy fits this lead",
+            "approach_rationale": "why this strategy fits this lead based on our methodology",
             "key_messaging": [
-                "primary value proposition",
-                "secondary benefits",
-                "differentiation points"
+                "primary value proposition aligned with our differentiators",
+                "secondary benefits specific to their industry",
+                "differentiation points vs competitors"
             ],
             "objection_handling": {{
-                "budget_concerns": "how to address budget objections",
-                "timing_issues": "how to handle timing concerns",
-                "competition": "how to differentiate from competitors",
-                "authority": "how to reach decision makers"
+                "budget_concerns": "specific approach based on our proven strategies",
+                "timing_issues": "how to create urgency and compelling events",
+                "competition": "how to differentiate using our unique advantages",
+                "authority": "how to reach and influence decision makers"
             }},
             "engagement_tactics": [
-                "specific tactics for this lead type",
-                "communication preferences",
-                "meeting/demo strategies"
+                "specific tactics for this lead type and industry",
+                "communication preferences and channels",
+                "meeting/demo strategies that work for this industry"
             ],
             "success_metrics": [
-                "how to measure progress",
-                "key milestones to track"
+                "how to measure progress through our sales stages",
+                "key milestones and conversion indicators"
             ],
             "risk_mitigation": [
-                "potential risks and how to avoid them"
+                "potential risks specific to this industry and lead type",
+                "proactive strategies to avoid common pitfalls"
             ]
         }}
         
-        Tailor strategy to the lead's industry, company size, pain points, and quality tier.
+        Align strategy with our consultative selling methodology and company strengths.
         """
         
         try:
@@ -537,46 +594,68 @@ class GeminiAIService:
         industry = lead_data.get('industry', 'General Business')
         company_size = lead_data.get('company_size', 'Unknown')
         
+        # Get comprehensive industry context
+        industry_context = get_context_for_industry(industry)
+        
+        # Build context-aware prompt
+        base_prompt = build_context_prompt('industry_insights', {
+            'industry': industry,
+            'company_size': company_size,
+            'target_market': SALES_CONTEXT['company_profile']['target_market']
+        })
+        
         prompt = f"""
-        Provide industry-specific insights and best practices for this lead:
+        {base_prompt}
         
         Industry: {industry}
         Company Size: {company_size}
         Lead Context: {json.dumps(lead_data, indent=2)}
         
+        Our Company Strengths for This Industry:
+        {chr(10).join(f"- {advantage}" for advantage in SALES_CONTEXT['company_profile']['competitive_advantages'])}
+        
+        Industry Knowledge Base:
+        - Common pain points: {', '.join(industry_context.get('common_pain_points', []))}
+        - Typical decision makers: {', '.join(industry_context.get('decision_makers', []))}
+        - Recommended sales approach: {industry_context.get('sales_approach', 'Consultative')}
+        - Typical sales cycle: {industry_context.get('typical_sales_cycle', '3-6 months')}
+        - Key messaging themes: {', '.join(industry_context.get('key_messaging', []))}
+        
         Provide insights in this EXACT JSON format:
         {{
             "industry_trends": [
-                "current trends affecting this industry",
-                "market challenges and opportunities"
+                "current trends affecting {industry}",
+                "market challenges and digital transformation opportunities"
             ],
             "industry_pain_points": [
-                "common pain points in this industry",
-                "typical business challenges"
+                "common pain points specific to {industry}",
+                "business challenges our solution addresses"
             ],
             "solution_fit": {{
-                "why_relevant": "why our solution fits this industry",
-                "specific_benefits": ["industry-specific benefits"],
-                "use_cases": ["relevant use cases for this industry"]
+                "why_relevant": "why our AI-powered sales solution fits {industry}",
+                "specific_benefits": ["benefits aligned with our competitive advantages"],
+                "use_cases": ["relevant use cases showcasing our strengths"]
             }},
             "competitive_landscape": {{
-                "common_competitors": ["typical competitors in this space"],
-                "differentiation_opportunities": ["how to stand out"]
+                "common_competitors": ["typical competitors in {industry} sales tech space"],
+                "differentiation_opportunities": ["how our unique advantages create competitive edge"]
             }},
             "sales_best_practices": [
-                "industry-specific sales approaches",
-                "communication preferences",
-                "decision-making patterns"
+                "industry-specific sales approaches that work for {industry}",
+                "communication preferences and decision-making patterns",
+                "proven strategies for {company_size} companies"
             ],
             "compliance_considerations": [
-                "regulatory or compliance factors to consider"
+                "regulatory or compliance factors relevant to {industry}",
+                "data privacy and security requirements"
             ],
             "success_stories": [
-                "relevant case studies or success patterns"
+                "relevant case studies or success patterns for similar companies",
+                "ROI examples and implementation timelines"
             ]
         }}
         
-        Focus on actionable insights specific to {industry} companies of size {company_size}.
+        Focus on actionable insights that leverage our company's strengths and address specific {industry} needs.
         """
         
         try:
@@ -596,9 +675,20 @@ class GeminiAIService:
             return self._get_default_insights()
     
     def _build_recommendations_prompt(self, lead_data: dict, context: dict) -> str:
-        """Build comprehensive recommendations prompt"""
+        """Build comprehensive recommendations prompt with context guidelines"""
+        industry = lead_data.get('industry', 'technology')
+        industry_context = get_context_for_industry(industry)
+        recommendation_guidelines = get_recommendation_guidelines()
+        
+        # Build context-aware prompt
+        base_prompt = build_context_prompt('recommendations', {
+            'industry': industry,
+            'company_size': lead_data.get('company_size', 'Unknown'),
+            'urgency_level': lead_data.get('urgency_level', 'medium')
+        })
+        
         return f"""
-        You are an expert sales strategist. Analyze this lead and provide comprehensive recommendations.
+        {base_prompt}
         
         Lead Information:
         {json.dumps(lead_data, indent=2)}
@@ -606,45 +696,58 @@ class GeminiAIService:
         Additional Context:
         {json.dumps(context, indent=2)}
         
+        Industry-Specific Guidelines:
+        - Decision makers: {', '.join(industry_context.get('decision_makers', []))}
+        - Sales approach: {industry_context.get('sales_approach', 'Consultative')}
+        - Typical sales cycle: {industry_context.get('typical_sales_cycle', '3-6 months')}
+        
+        Recommendation Framework:
+        Immediate actions: {', '.join(recommendation_guidelines['next_steps']['immediate_actions'])}
+        Short-term actions: {', '.join(recommendation_guidelines['next_steps']['short_term_actions'])}
+        High priority focus: {', '.join(recommendation_guidelines['priority_matrix']['high_priority'])}
+        
+        Our Company Differentiators to Emphasize:
+        {chr(10).join(f"- {advantage}" for advantage in SALES_CONTEXT['company_profile']['competitive_advantages'])}
+        
         Provide recommendations in this EXACT JSON format:
         {{
             "recommendations": [
                 {{
                     "type": "next_step|strategy|approach|follow_up",
-                    "title": "Brief actionable title",
-                    "description": "Detailed description with specific actions",
+                    "title": "Brief actionable title aligned with our methodology",
+                    "description": "Detailed description with specific actions leveraging our strengths",
                     "priority": "high|medium|low",
                     "timeline": "immediate|1-3 days|1 week|2-4 weeks",
                     "effort_level": "low|medium|high",
-                    "expected_outcome": "what this should achieve",
-                    "success_metrics": "how to measure success"
+                    "expected_outcome": "what this should achieve for our sales process",
+                    "success_metrics": "how to measure success using our KPIs"
                 }}
             ],
             "lead_score": 85,
             "conversion_probability": 65,
-            "estimated_close_timeline": "3-6 months",
+            "estimated_close_timeline": "based on industry typical cycle",
             "key_insights": [
-                "important insights about this lead",
-                "opportunities identified",
-                "potential challenges"
+                "important insights about this lead's fit with our solution",
+                "opportunities to leverage our competitive advantages",
+                "potential challenges and how to address them"
             ],
             "risk_factors": [
-                "potential risks that could derail the deal",
-                "competitive threats",
-                "internal challenges"
+                "potential risks specific to this industry and lead type",
+                "competitive threats and mitigation strategies",
+                "internal challenges and resource requirements"
             ],
             "opportunities": [
-                "specific opportunities to pursue",
-                "upsell/cross-sell potential",
-                "expansion possibilities"
+                "specific opportunities to showcase our differentiators",
+                "upsell/cross-sell potential based on our product suite",
+                "expansion possibilities and strategic partnerships"
             ],
             "next_best_actions": [
-                "top 3 immediate actions to take",
-                "prioritized by impact and urgency"
+                "top 3 immediate actions prioritized by our sales methodology",
+                "actions that advance through our defined sales stages"
             ]
         }}
         
-        Focus on specific, actionable recommendations based on the lead's characteristics.
+        Align all recommendations with our consultative selling approach and company strengths.
         """
     
     def _enhance_recommendations(self, recommendations: dict, lead_data: dict) -> dict:
@@ -1442,4 +1545,728 @@ class GeminiAIService:
             ],
             "confidence_score": 50.0,
             "generated_at": None
+        }
+    
+    def analyze_opportunity_conversion_potential(self, lead_data: dict, historical_data: dict = None) -> dict:
+        """
+        Analyze lead-to-opportunity conversion probability and readiness
+        
+        Args:
+            lead_data (dict): Lead information to analyze
+            historical_data (dict): Historical conversion data for context
+            
+        Returns:
+            dict: Comprehensive conversion analysis with probability and recommendations
+        """
+        historical_context = historical_data or {}
+        
+        # Build context-aware prompt for conversion analysis
+        prompt = f"""
+        You are an expert sales conversion analyst. Analyze this lead's potential for conversion to a sales opportunity.
+        
+        ANALYSIS FRAMEWORK:
+        1. Evaluate conversion readiness based on BANT criteria (Budget, Authority, Need, Timeline)
+        2. Assess engagement level and buying signals
+        3. Consider competitive landscape and urgency factors
+        4. Analyze data completeness and qualification level
+        
+        Lead Data: {json.dumps(lead_data, indent=2)}
+        
+        Historical Context:
+        - Average conversion rate: {historical_context.get('avg_conversion_rate', 25)}%
+        - Typical sales cycle: {historical_context.get('avg_sales_cycle', '3-6 months')}
+        - Similar industry conversion rate: {historical_context.get('industry_conversion_rate', 30)}%
+        
+        Provide analysis in this EXACT JSON format:
+        {{
+            "conversion_probability": 75,
+            "conversion_confidence": 85,
+            "conversion_readiness_score": 80,
+            "readiness_factors": [
+                "Clear budget authority identified",
+                "Specific timeline mentioned",
+                "Pain points align with our solution"
+            ],
+            "blocking_factors": [
+                "Decision maker not yet identified",
+                "Budget approval process unclear"
+            ],
+            "recommended_for_conversion": true,
+            "conversion_timeline": "2-4 weeks",
+            "required_actions_before_conversion": [
+                "Qualify budget range and approval process",
+                "Identify and engage key decision makers",
+                "Conduct needs assessment call"
+            ],
+            "conversion_triggers": [
+                "Budget approval received",
+                "Technical requirements confirmed",
+                "Timeline urgency increases"
+            ],
+            "risk_factors": [
+                "Competitive evaluation in progress",
+                "Budget cycle timing uncertainty"
+            ],
+            "success_indicators": [
+                "Multiple stakeholder engagement",
+                "Technical evaluation requested",
+                "Reference requests made"
+            ]
+        }}
+        
+        Base your analysis on proven sales conversion methodologies and the specific lead characteristics provided.
+        """
+        
+        try:
+            response = self._make_api_call(prompt)
+            response_text = response.text.strip()
+            
+            conversion_data = self._parse_ai_response(response_text)
+            
+            # Validate and enhance conversion analysis
+            validated_conversion = self._validate_conversion_analysis(conversion_data, lead_data)
+            
+            logger.info(f"Analyzed opportunity conversion potential: {validated_conversion}")
+            return validated_conversion
+            
+        except Exception as e:
+            logger.error(f"Error analyzing opportunity conversion potential: {e}")
+            return self._get_default_conversion_analysis()
+    
+    def predict_deal_size_and_timeline(self, lead_data: dict, opportunity_data: dict = None) -> dict:
+        """
+        Predict deal size range and sales timeline based on lead characteristics
+        
+        Args:
+            lead_data (dict): Lead information
+            opportunity_data (dict): Optional existing opportunity data
+            
+        Returns:
+            dict: Deal size and timeline predictions with confidence intervals
+        """
+        opportunity_context = opportunity_data or {}
+        industry = lead_data.get('industry', 'technology')
+        company_size = lead_data.get('company_size', 'Unknown')
+        
+        # Get industry-specific context for deal sizing
+        industry_context = get_context_for_industry(industry)
+        
+        prompt = f"""
+        You are an expert sales forecasting analyst. Predict the deal size and sales timeline for this opportunity.
+        
+        PREDICTION FRAMEWORK:
+        1. Analyze company size, industry, and budget indicators
+        2. Consider pain point severity and solution scope
+        3. Factor in competitive landscape and urgency
+        4. Apply industry benchmarks and historical patterns
+        
+        Lead Information: {json.dumps(lead_data, indent=2)}
+        Opportunity Context: {json.dumps(opportunity_context, indent=2)}
+        
+        Industry Benchmarks:
+        - Industry: {industry}
+        - Typical deal size range: {industry_context.get('typical_deal_size', '$25K-$100K')}
+        - Average sales cycle: {industry_context.get('typical_sales_cycle', '3-6 months')}
+        - Decision complexity: {industry_context.get('decision_complexity', 'Medium')}
+        
+        Company Size Context:
+        - Size indicator: {company_size}
+        - Budget implications: Consider enterprise vs SMB budget patterns
+        
+        Provide predictions in this EXACT JSON format:
+        {{
+            "deal_size_prediction": {{
+                "minimum_value": 25000,
+                "maximum_value": 75000,
+                "most_likely_value": 50000,
+                "confidence_level": 75,
+                "sizing_rationale": "Based on company size, pain point severity, and industry benchmarks"
+            }},
+            "timeline_prediction": {{
+                "minimum_days": 60,
+                "maximum_days": 180,
+                "most_likely_days": 120,
+                "confidence_level": 80,
+                "timeline_rationale": "Considering decision complexity and typical industry sales cycles"
+            }},
+            "deal_size_factors": [
+                "Company size indicates mid-market budget capacity",
+                "Multiple pain points suggest comprehensive solution need",
+                "Industry standards support premium pricing"
+            ],
+            "timeline_factors": [
+                "Decision maker authority level affects approval speed",
+                "Technical evaluation requirements extend timeline",
+                "Budget cycle timing influences close date"
+            ],
+            "accelerating_factors": [
+                "Urgent business need creates timeline pressure",
+                "Existing vendor contract expiration",
+                "Regulatory compliance deadline"
+            ],
+            "risk_factors": [
+                "Budget approval process complexity",
+                "Multiple stakeholder consensus required",
+                "Competitive evaluation timeline"
+            ],
+            "benchmarking_data": {{
+                "industry_average_deal_size": 45000,
+                "industry_average_sales_cycle": 105,
+                "similar_company_patterns": "Mid-market companies typically close 30% faster with clear ROI"
+            }}
+        }}
+        
+        Base predictions on realistic market conditions and proven sales patterns.
+        """
+        
+        try:
+            response = self._make_api_call(prompt)
+            response_text = response.text.strip()
+            
+            prediction_data = self._parse_ai_response(response_text)
+            
+            # Validate and enhance predictions
+            validated_predictions = self._validate_deal_predictions(prediction_data, lead_data)
+            
+            logger.info(f"Predicted deal size and timeline: {validated_predictions}")
+            return validated_predictions
+            
+        except Exception as e:
+            logger.error(f"Error predicting deal size and timeline: {e}")
+            return self._get_default_deal_predictions()
+    
+    def recommend_sales_stage(self, lead_data: dict, opportunity_data: dict, current_stage: str = None) -> dict:
+        """
+        Recommend appropriate sales stage based on opportunity characteristics and progress
+        
+        Args:
+            lead_data (dict): Original lead information
+            opportunity_data (dict): Current opportunity data
+            current_stage (str): Current sales stage
+            
+        Returns:
+            dict: Stage recommendations with advancement probability and timeline
+        """
+        current_stage = current_stage or opportunity_data.get('stage', 'prospecting')
+        
+        # Define sales stage progression framework
+        stage_framework = {
+            'prospecting': {
+                'next_stage': 'qualification',
+                'requirements': ['Initial contact made', 'Basic need identified', 'Contact information confirmed']
+            },
+            'qualification': {
+                'next_stage': 'proposal',
+                'requirements': ['BANT criteria assessed', 'Decision makers identified', 'Budget range confirmed']
+            },
+            'proposal': {
+                'next_stage': 'negotiation',
+                'requirements': ['Formal proposal submitted', 'Technical requirements confirmed', 'Pricing discussed']
+            },
+            'negotiation': {
+                'next_stage': 'closed_won',
+                'requirements': ['Terms negotiated', 'Contract reviewed', 'Final approvals pending']
+            }
+        }
+        
+        prompt = f"""
+        You are an expert sales stage analyst. Recommend the appropriate sales stage and advancement strategy.
+        
+        STAGE ANALYSIS FRAMEWORK:
+        1. Evaluate current qualification level against stage requirements
+        2. Assess readiness for stage advancement
+        3. Identify gaps that need addressing
+        4. Predict advancement probability and timeline
+        
+        Current Stage: {current_stage}
+        Lead Data: {json.dumps(lead_data, indent=2)}
+        Opportunity Data: {json.dumps(opportunity_data, indent=2)}
+        
+        Stage Framework: {json.dumps(stage_framework, indent=2)}
+        
+        Provide recommendations in this EXACT JSON format:
+        {{
+            "current_stage_assessment": {{
+                "recommended_stage": "qualification",
+                "stage_confidence": 85,
+                "stage_rationale": "Lead shows clear qualification criteria but needs budget confirmation"
+            }},
+            "advancement_analysis": {{
+                "next_stage": "proposal",
+                "advancement_probability": 70,
+                "advancement_timeline": "2-3 weeks",
+                "advancement_confidence": 75
+            }},
+            "stage_requirements_met": [
+                "Initial contact established",
+                "Basic needs identified",
+                "Pain points confirmed"
+            ],
+            "stage_requirements_missing": [
+                "Budget authority not confirmed",
+                "Decision timeline unclear",
+                "Technical requirements not detailed"
+            ],
+            "advancement_actions": [
+                "Schedule budget qualification call",
+                "Identify and engage decision makers",
+                "Conduct technical needs assessment"
+            ],
+            "stage_risks": [
+                "Budget approval process may be complex",
+                "Multiple stakeholders not yet engaged",
+                "Competitive evaluation possible"
+            ],
+            "success_metrics": [
+                "Budget range confirmed within 2 weeks",
+                "Decision maker meeting scheduled",
+                "Technical requirements documented"
+            ],
+            "fallback_strategies": [
+                "If budget unclear, focus on ROI demonstration",
+                "If decision makers unavailable, work through champion",
+                "If timeline uncertain, create urgency through limited-time offers"
+            ]
+        }}
+        
+        Base recommendations on proven sales methodology and realistic progression timelines.
+        """
+        
+        try:
+            response = self._make_api_call(prompt)
+            response_text = response.text.strip()
+            
+            stage_data = self._parse_ai_response(response_text)
+            
+            # Validate and enhance stage recommendations
+            validated_stage = self._validate_stage_recommendations(stage_data, opportunity_data)
+            
+            logger.info(f"Recommended sales stage: {validated_stage}")
+            return validated_stage
+            
+        except Exception as e:
+            logger.error(f"Error recommending sales stage: {e}")
+            return self._get_default_stage_recommendations()
+    
+    def identify_risk_factors_and_mitigation(self, lead_data: dict, opportunity_data: dict, historical_data: dict = None) -> dict:
+        """
+        Identify potential risk factors and suggest mitigation strategies
+        
+        Args:
+            lead_data (dict): Lead information
+            opportunity_data (dict): Opportunity details
+            historical_data (dict): Historical risk patterns
+            
+        Returns:
+            dict: Risk analysis with mitigation strategies and monitoring recommendations
+        """
+        historical_context = historical_data or {}
+        
+        prompt = f"""
+        You are an expert sales risk analyst. Identify potential risks and provide mitigation strategies for this opportunity.
+        
+        RISK ANALYSIS FRAMEWORK:
+        1. Competitive risks and market threats
+        2. Internal capability and resource risks
+        3. Customer-side risks (budget, authority, timeline)
+        4. Technical and implementation risks
+        5. Relationship and communication risks
+        
+        Lead Data: {json.dumps(lead_data, indent=2)}
+        Opportunity Data: {json.dumps(opportunity_data, indent=2)}
+        
+        Historical Risk Patterns:
+        - Common loss reasons: {historical_context.get('common_loss_reasons', ['Price', 'Timeline', 'Features'])}
+        - Risk indicators: {historical_context.get('risk_indicators', ['Long sales cycles', 'Multiple vendors', 'Budget delays'])}
+        
+        Provide analysis in this EXACT JSON format:
+        {{
+            "overall_risk_assessment": {{
+                "risk_level": "medium",
+                "risk_score": 45,
+                "confidence": 80,
+                "primary_risk_category": "competitive"
+            }},
+            "identified_risks": [
+                {{
+                    "risk_type": "competitive",
+                    "risk_description": "Multiple vendor evaluation in progress",
+                    "probability": 60,
+                    "impact": "high",
+                    "risk_score": 75,
+                    "indicators": ["Competitor mentions", "Evaluation timeline", "Feature comparisons"]
+                }},
+                {{
+                    "risk_type": "budget",
+                    "risk_description": "Budget approval process unclear",
+                    "probability": 40,
+                    "impact": "high",
+                    "risk_score": 60,
+                    "indicators": ["No budget range provided", "Multiple approvers mentioned"]
+                }}
+            ],
+            "mitigation_strategies": [
+                {{
+                    "risk_type": "competitive",
+                    "strategies": [
+                        "Emphasize unique differentiators early in process",
+                        "Build strong champion relationships",
+                        "Provide superior proof of concept"
+                    ],
+                    "timeline": "immediate",
+                    "resources_required": ["Sales engineer", "Reference customers", "Executive sponsor"]
+                }},
+                {{
+                    "risk_type": "budget",
+                    "strategies": [
+                        "Conduct thorough budget qualification",
+                        "Provide ROI analysis and business case",
+                        "Identify budget approval process and timeline"
+                    ],
+                    "timeline": "within 2 weeks",
+                    "resources_required": ["Financial analyst", "ROI calculator", "Executive presentation"]
+                }}
+            ],
+            "monitoring_recommendations": [
+                "Weekly competitive intelligence updates",
+                "Budget approval milestone tracking",
+                "Stakeholder engagement frequency monitoring"
+            ],
+            "early_warning_indicators": [
+                "Delayed responses to proposals",
+                "Reduced stakeholder engagement",
+                "New competitor mentions",
+                "Budget cycle changes"
+            ],
+            "contingency_plans": [
+                "If competitive threat increases: Accelerate decision timeline",
+                "If budget issues arise: Explore phased implementation",
+                "If timeline delays: Maintain engagement with value-add activities"
+            ]
+        }}
+        
+        Focus on actionable risks with specific mitigation strategies and clear monitoring criteria.
+        """
+        
+        try:
+            response = self._make_api_call(prompt)
+            response_text = response.text.strip()
+            
+            risk_data = self._parse_ai_response(response_text)
+            
+            # Validate and enhance risk analysis
+            validated_risks = self._validate_risk_analysis(risk_data, opportunity_data)
+            
+            logger.info(f"Identified risks and mitigation strategies: {validated_risks}")
+            return validated_risks
+            
+        except Exception as e:
+            logger.error(f"Error identifying risk factors: {e}")
+            return self._get_default_risk_analysis()
+    
+    def analyze_historical_patterns(self, lead_data: dict, user_id: str = None) -> dict:
+        """
+        Analyze historical data patterns to improve predictions
+        
+        Args:
+            lead_data (dict): Current lead data for comparison
+            user_id (str): User ID for personalized historical analysis
+            
+        Returns:
+            dict: Historical pattern analysis with benchmarks and insights
+        """
+        # This would typically query historical data from the database
+        # For now, we'll simulate with AI analysis of provided patterns
+        
+        prompt = f"""
+        You are an expert sales data analyst. Analyze historical patterns to provide insights for this lead.
+        
+        HISTORICAL ANALYSIS FRAMEWORK:
+        1. Similar lead characteristics and outcomes
+        2. Industry-specific conversion patterns
+        3. Seasonal and timing factors
+        4. Sales methodology effectiveness
+        5. Resource allocation optimization
+        
+        Current Lead Profile: {json.dumps(lead_data, indent=2)}
+        
+        Analyze patterns and provide insights in this EXACT JSON format:
+        {{
+            "similar_leads_analysis": {{
+                "similar_leads_count": 25,
+                "average_conversion_rate": 35,
+                "average_deal_size": 45000,
+                "average_sales_cycle": 95,
+                "success_factors": [
+                    "Early technical evaluation",
+                    "Executive sponsor engagement",
+                    "Clear ROI demonstration"
+                ]
+            }},
+            "industry_benchmarks": {{
+                "industry_conversion_rate": 28,
+                "industry_average_deal_size": 52000,
+                "industry_sales_cycle": 120,
+                "competitive_win_rate": 42,
+                "seasonal_patterns": "Q4 budget flush increases close rates by 15%"
+            }},
+            "predictive_insights": [
+                "Leads with similar pain points convert 40% higher than average",
+                "Company size indicates 25% higher deal value potential",
+                "Industry timing suggests 20% faster sales cycle possible"
+            ],
+            "optimization_recommendations": [
+                "Allocate senior sales engineer for technical evaluation",
+                "Schedule executive briefing within first 2 weeks",
+                "Prepare industry-specific ROI calculator"
+            ],
+            "success_probability_factors": {{
+                "positive_indicators": [
+                    "Pain point severity matches our strength areas",
+                    "Company growth stage aligns with expansion needs",
+                    "Budget cycle timing favorable"
+                ],
+                "negative_indicators": [
+                    "Competitive landscape more crowded than average",
+                    "Decision complexity higher than typical"
+                ],
+                "neutral_factors": [
+                    "Geographic location shows average performance",
+                    "Contact seniority level typical for industry"
+                ]
+            }},
+            "resource_allocation_guidance": {{
+                "recommended_investment_level": "high",
+                "key_resources_needed": ["Senior AE", "Sales engineer", "Executive sponsor"],
+                "timeline_priorities": ["Technical proof within 3 weeks", "Executive meeting within 4 weeks"],
+                "success_metrics": ["Technical approval", "Budget confirmation", "Timeline agreement"]
+            }}
+        }}
+        
+        Base analysis on realistic historical patterns and proven sales methodologies.
+        """
+        
+        try:
+            response = self._make_api_call(prompt)
+            response_text = response.text.strip()
+            
+            historical_data = self._parse_ai_response(response_text)
+            
+            # Validate and enhance historical analysis
+            validated_historical = self._validate_historical_analysis(historical_data, lead_data)
+            
+            logger.info(f"Analyzed historical patterns: {validated_historical}")
+            return validated_historical
+            
+        except Exception as e:
+            logger.error(f"Error analyzing historical patterns: {e}")
+            return self._get_default_historical_analysis()
+    
+    # Validation and default methods for opportunity conversion intelligence
+    
+    def _validate_conversion_analysis(self, data: dict, lead_data: dict) -> dict:
+        """Validate and enhance conversion analysis data"""
+        validated = data.copy()
+        
+        # Ensure probability is within valid range
+        validated['conversion_probability'] = max(0, min(100, validated.get('conversion_probability', 50)))
+        validated['conversion_confidence'] = max(0, min(100, validated.get('conversion_confidence', 70)))
+        
+        # Ensure required fields exist
+        validated.setdefault('readiness_factors', [])
+        validated.setdefault('blocking_factors', [])
+        validated.setdefault('required_actions_before_conversion', [])
+        
+        # Set default conversion recommendation based on probability
+        if 'recommended_for_conversion' not in validated:
+            validated['recommended_for_conversion'] = validated['conversion_probability'] >= 60
+        
+        return validated
+    
+    def _validate_deal_predictions(self, data: dict, lead_data: dict) -> dict:
+        """Validate and enhance deal prediction data"""
+        validated = data.copy()
+        
+        # Validate deal size prediction structure
+        if 'deal_size_prediction' in validated:
+            deal_size = validated['deal_size_prediction']
+            deal_size['minimum_value'] = max(1000, deal_size.get('minimum_value', 10000))
+            deal_size['maximum_value'] = max(deal_size['minimum_value'], deal_size.get('maximum_value', 50000))
+            deal_size['most_likely_value'] = max(deal_size['minimum_value'], 
+                                               min(deal_size['maximum_value'], 
+                                                   deal_size.get('most_likely_value', 25000)))
+        
+        # Validate timeline prediction structure
+        if 'timeline_prediction' in validated:
+            timeline = validated['timeline_prediction']
+            timeline['minimum_days'] = max(7, timeline.get('minimum_days', 30))
+            timeline['maximum_days'] = max(timeline['minimum_days'], timeline.get('maximum_days', 180))
+            timeline['most_likely_days'] = max(timeline['minimum_days'],
+                                             min(timeline['maximum_days'],
+                                                 timeline.get('most_likely_days', 90)))
+        
+        return validated
+    
+    def _validate_stage_recommendations(self, data: dict, opportunity_data: dict) -> dict:
+        """Validate and enhance stage recommendation data"""
+        validated = data.copy()
+        
+        # Ensure advancement probability is valid
+        if 'advancement_analysis' in validated:
+            advancement = validated['advancement_analysis']
+            advancement['advancement_probability'] = max(0, min(100, advancement.get('advancement_probability', 50)))
+        
+        # Ensure required lists exist
+        validated.setdefault('stage_requirements_met', [])
+        validated.setdefault('stage_requirements_missing', [])
+        validated.setdefault('advancement_actions', [])
+        
+        return validated
+    
+    def _validate_risk_analysis(self, data: dict, opportunity_data: dict) -> dict:
+        """Validate and enhance risk analysis data"""
+        validated = data.copy()
+        
+        # Ensure risk score is valid
+        if 'overall_risk_assessment' in validated:
+            risk_assessment = validated['overall_risk_assessment']
+            risk_assessment['risk_score'] = max(0, min(100, risk_assessment.get('risk_score', 50)))
+        
+        # Ensure required structures exist
+        validated.setdefault('identified_risks', [])
+        validated.setdefault('mitigation_strategies', [])
+        validated.setdefault('monitoring_recommendations', [])
+        
+        return validated
+    
+    def _validate_historical_analysis(self, data: dict, lead_data: dict) -> dict:
+        """Validate and enhance historical analysis data"""
+        validated = data.copy()
+        
+        # Ensure similar leads analysis has valid numbers
+        if 'similar_leads_analysis' in validated:
+            similar = validated['similar_leads_analysis']
+            similar['average_conversion_rate'] = max(0, min(100, similar.get('average_conversion_rate', 25)))
+            similar['average_deal_size'] = max(1000, similar.get('average_deal_size', 25000))
+            similar['average_sales_cycle'] = max(7, similar.get('average_sales_cycle', 90))
+        
+        return validated
+    
+    # Default fallback methods
+    
+    def _get_default_conversion_analysis(self) -> dict:
+        """Return default conversion analysis when generation fails"""
+        return {
+            "conversion_probability": 50.0,
+            "conversion_confidence": 60.0,
+            "conversion_readiness_score": 50.0,
+            "readiness_factors": ["Basic lead information captured"],
+            "blocking_factors": ["Needs further qualification"],
+            "recommended_for_conversion": False,
+            "conversion_timeline": "4-6 weeks",
+            "required_actions_before_conversion": [
+                "Qualify budget and authority",
+                "Confirm timeline and urgency",
+                "Identify decision makers"
+            ],
+            "conversion_triggers": ["Budget confirmation", "Timeline urgency"],
+            "risk_factors": ["Incomplete qualification"],
+            "success_indicators": ["Stakeholder engagement"]
+        }
+    
+    def _get_default_deal_predictions(self) -> dict:
+        """Return default deal predictions when generation fails"""
+        return {
+            "deal_size_prediction": {
+                "minimum_value": 10000,
+                "maximum_value": 50000,
+                "most_likely_value": 25000,
+                "confidence_level": 60,
+                "sizing_rationale": "Based on typical industry patterns"
+            },
+            "timeline_prediction": {
+                "minimum_days": 60,
+                "maximum_days": 180,
+                "most_likely_days": 120,
+                "confidence_level": 65,
+                "timeline_rationale": "Standard sales cycle for similar opportunities"
+            },
+            "deal_size_factors": ["Company size assessment needed"],
+            "timeline_factors": ["Decision process complexity unknown"],
+            "accelerating_factors": ["Urgency indicators"],
+            "risk_factors": ["Competitive evaluation possible"]
+        }
+    
+    def _get_default_stage_recommendations(self) -> dict:
+        """Return default stage recommendations when generation fails"""
+        return {
+            "current_stage_assessment": {
+                "recommended_stage": "qualification",
+                "stage_confidence": 60,
+                "stage_rationale": "Needs further qualification"
+            },
+            "advancement_analysis": {
+                "next_stage": "proposal",
+                "advancement_probability": 50,
+                "advancement_timeline": "3-4 weeks",
+                "advancement_confidence": 60
+            },
+            "stage_requirements_met": ["Initial contact established"],
+            "stage_requirements_missing": ["Budget qualification needed"],
+            "advancement_actions": ["Schedule qualification call"],
+            "stage_risks": ["Incomplete information"],
+            "success_metrics": ["Information gathering progress"]
+        }
+    
+    def _get_default_risk_analysis(self) -> dict:
+        """Return default risk analysis when generation fails"""
+        return {
+            "overall_risk_assessment": {
+                "risk_level": "medium",
+                "risk_score": 50,
+                "confidence": 60,
+                "primary_risk_category": "qualification"
+            },
+            "identified_risks": [{
+                "risk_type": "qualification",
+                "risk_description": "Incomplete lead qualification",
+                "probability": 60,
+                "impact": "medium",
+                "risk_score": 50,
+                "indicators": ["Limited information available"]
+            }],
+            "mitigation_strategies": [{
+                "risk_type": "qualification",
+                "strategies": ["Conduct thorough discovery call"],
+                "timeline": "within 1 week",
+                "resources_required": ["Sales representative time"]
+            }],
+            "monitoring_recommendations": ["Track qualification progress"],
+            "early_warning_indicators": ["Delayed responses"],
+            "contingency_plans": ["Alternative qualification approaches"]
+        }
+    
+    def _get_default_historical_analysis(self) -> dict:
+        """Return default historical analysis when generation fails"""
+        return {
+            "similar_leads_analysis": {
+                "similar_leads_count": 10,
+                "average_conversion_rate": 25,
+                "average_deal_size": 25000,
+                "average_sales_cycle": 90,
+                "success_factors": ["Proper qualification", "Stakeholder engagement"]
+            },
+            "industry_benchmarks": {
+                "industry_conversion_rate": 25,
+                "industry_average_deal_size": 30000,
+                "industry_sales_cycle": 120,
+                "competitive_win_rate": 35
+            },
+            "predictive_insights": ["Standard industry patterns apply"],
+            "optimization_recommendations": ["Follow standard sales process"],
+            "success_probability_factors": {
+                "positive_indicators": ["Lead shows interest"],
+                "negative_indicators": ["Limited information available"],
+                "neutral_factors": ["Standard industry characteristics"]
+            }
         }

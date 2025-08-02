@@ -1013,52 +1013,15 @@ class LeadExtractionAccuracyTestCase(TestCase):
     @patch('ai_service.services.genai.configure')
     @patch('ai_service.services.genai.GenerativeModel')
     def test_sales_call_conversation(self, mock_model, mock_configure):
-        """Test extraction from a typical sales call conversation"""
+        # Test extraction from a typical sales call conversation
         mock_response = MagicMock()
-        mock_response.text = '''```json
-        {
-            "company_name": "TechStart Inc",
-            "contact_details": {
-                "name": "Sarah Johnson",
-                "email": "sarah.johnson@techstart.com",
-                "phone": "555-987-6543",
-                "title": "CTO",
-                "department": "Technology"
-            },
-            "pain_points": ["Manual data entry", "System integration issues", "Scalability concerns"],
-            "requirements": ["Automated workflow", "API integration", "Cloud-based solution"],
-            "budget_info": "$100,000 - $150,000",
-            "timeline": "Implementation by Q3 2024",
-            "decision_makers": ["Sarah Johnson", "Mike Chen (CEO)"],
-            "industry": "Software Development",
-            "company_size": "50-100 employees",
-            "urgency_level": "high",
-            "current_solution": "Excel spreadsheets and manual processes",
-            "competitors_mentioned": ["Salesforce", "HubSpot"]
-        }
-        ```'''
+        mock_response.text = '{"company_name": "TechStart Inc", "contact_details": {"name": "Sarah Johnson", "email": "sarah.johnson@techstart.com", "phone": "555-987-6543", "title": "CTO", "department": "Technology"}, "pain_points": ["Manual data entry", "System integration issues", "Scalability concerns"], "requirements": ["Automated workflow", "API integration", "Cloud-based solution"], "budget_info": "$100,000 - $150,000", "timeline": "Implementation by Q3 2024", "decision_makers": ["Sarah Johnson", "Mike Chen (CEO)"], "industry": "Software Development", "company_size": "50-100 employees", "urgency_level": "high", "current_solution": "Excel spreadsheets and manual processes", "competitors_mentioned": ["Salesforce", "HubSpot"]}'
         
         mock_model_instance = MagicMock()
         mock_model_instance.generate_content.return_value = mock_response
         mock_model.return_value = mock_model_instance
         
-        conversation = """Hi Sarah, thanks for taking the time to speak with me today. I understand you are the CTO at TechStart Inc.
-        
-        Sarah: Yes, that is right. We are a software development company with about 75 employees, and we are having some real challenges with our current processes.
-        
-        What kind of challenges are you facing?
-        
-        Sarah: Well, we are still doing a lot of manual data entry, which is eating up our developers time. We also have major system integration issues - our tools do not talk to each other properly. And frankly, we are worried about scalability as we grow.
-        
-        I see. What would an ideal solution look like for you?
-        
-        Sarah: We need something that can automate our workflow, has good API integration capabilities, and is cloud-based so we can scale easily. Our budget is somewhere between $100,000 and $150,000, and we would need to have everything implemented by Q3 2024.
-        
-        Who else would be involved in this decision?
-        
-        Sarah: It would be myself and our CEO, Mike Chen. We have looked at Salesforce and HubSpot, but they do not quite fit our specific needs.
-        
-        You can reach me at sarah.johnson@techstart.com or call me at 555-987-6543 if you have any follow-up questions."""
+        conversation = "Hi Sarah, thanks for taking the time to speak with me today. I understand you are the CTO at TechStart Inc. Sarah: Yes, that is right. We are a software development company with about 75 employees, and we are having some real challenges with our current processes. What kind of challenges are you facing? Sarah: Well, we are still doing a lot of manual data entry, which is eating up our developers time. We also have major system integration issues - our tools do not talk to each other properly. And frankly, we are worried about scalability as we grow. I see. What would an ideal solution look like for you? Sarah: We need something that can automate our workflow, has good API integration capabilities, and is cloud-based so we can scale easily. Our budget is somewhere between $100,000 and $150,000, and we would need to have everything implemented by Q3 2024. Who else would be involved in this decision? Sarah: It would be myself and our CEO, Mike Chen. We have looked at Salesforce and HubSpot, but they do not quite fit our specific needs. You can reach me at sarah.johnson@techstart.com or call me at 555-987-6543 if you have any follow-up questions."
         
         # Create fresh service instance with mocked model
         ai_service = GeminiAIService()
@@ -1076,30 +1039,9 @@ class LeadExtractionAccuracyTestCase(TestCase):
     @patch('ai_service.services.genai.configure')
     @patch('ai_service.services.genai.GenerativeModel')
     def test_minimal_information_conversation(self, mock_model, mock_configure):
-        """Test extraction from conversation with minimal information"""
+        # Test extraction from conversation with minimal information
         mock_response = MagicMock()
-        mock_response.text = '''```json
-        {
-            "company_name": "ABC Company",
-            "contact_details": {
-                "name": "John",
-                "email": null,
-                "phone": null,
-                "title": null,
-                "department": null
-            },
-            "pain_points": ["Need better solution"],
-            "requirements": [],
-            "budget_info": null,
-            "timeline": null,
-            "decision_makers": [],
-            "industry": null,
-            "company_size": null,
-            "urgency_level": null,
-            "current_solution": null,
-            "competitors_mentioned": []
-        }
-        ```'''
+        mock_response.text = '{"company_name": "ABC Company", "contact_details": {"name": "John", "email": null, "phone": null, "title": null, "department": null}, "pain_points": ["Need better solution"], "requirements": [], "budget_info": null, "timeline": null, "decision_makers": [], "industry": null, "company_size": null, "urgency_level": null, "current_solution": null, "competitors_mentioned": []}'
         
         mock_model_instance = MagicMock()
         mock_model_instance.generate_content.return_value = mock_response
@@ -1121,13 +1063,13 @@ class LeadExtractionAccuracyTestCase(TestCase):
 
 
 class GeminiAIIntegrationTestCase(TestCase):
-    """Integration tests for Gemini AI service with real API calls (requires valid API key)"""
+    # Integration tests for Gemini AI service with real API calls (requires valid API key)
     
     def setUp(self):
         self.ai_service = GeminiAIService()
     
     def test_connection_with_valid_key(self):
-        """Test connection to Gemini AI with valid API key"""
+        # Test connection to Gemini AI with valid API key
         # Skip if no valid API key is configured
         try:
             result = self.ai_service.test_connection()
@@ -1140,17 +1082,10 @@ class GeminiAIIntegrationTestCase(TestCase):
             self.skipTest(f"API connection failed: {e}")
     
     def test_real_lead_extraction(self):
-        """Test real lead extraction with a sample conversation"""
+        # Test real lead extraction with a sample conversation
         # Skip if quota is exceeded
         try:
-            sample_conversation = """
-            Hello, this is Mike Johnson from DataTech Solutions. We are a mid-size company 
-            with about 200 employees in the financial services sector. We are currently 
-            struggling with our data management processes and are looking for a comprehensive 
-            solution that can help us automate our workflows and improve data accuracy. 
-            Our budget is around $75,000 and we need to implement something by the end of Q2 2024. 
-            You can reach me at mike.johnson@datatech.com or call 555-123-4567.
-            """
+            sample_conversation = "Hello, this is Mike Johnson from DataTech Solutions. We are a mid-size company with about 200 employees in the financial services sector. We are currently struggling with our data management processes and are looking for a comprehensive solution that can help us automate our workflows and improve data accuracy. Our budget is around $75,000 and we need to implement something by the end of Q2 2024. You can reach me at mike.johnson@datatech.com or call 555-123-4567."
             
             result = self.ai_service.extract_lead_info(sample_conversation)
             

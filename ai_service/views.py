@@ -1337,3 +1337,425 @@ class LeadAnalyticsView(APIView):
                 {'error': 'Failed to generate analytics', 'details': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+# Opportunity Conversion Intelligence Views
+
+@method_decorator(csrf_exempt, name='dispatch')
+class OpportunityConversionAnalysisView(APIView):
+    """API endpoint for analyzing lead-to-opportunity conversion potential"""
+    
+    permission_classes = []  # Temporarily disable authentication for testing
+    
+    def post(self, request):
+        """
+        Analyze lead's potential for conversion to opportunity
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information to analyze
+            },
+            "historical_data": {
+                // Optional historical conversion data
+            }
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            historical_data = request.data.get('historical_data', {})
+            
+            ai_service = GeminiAIService()
+            conversion_analysis = ai_service.analyze_opportunity_conversion_potential(lead_data, historical_data)
+            
+            return Response({
+                "success": True,
+                "conversion_analysis": conversion_analysis,
+                "analyzed_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error analyzing opportunity conversion potential: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to analyze conversion potential: {str(e)}",
+                    "error_code": "CONVERSION_ANALYSIS_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DealSizeTimelinePredictionView(APIView):
+    """API endpoint for predicting deal size and timeline"""
+    
+    permission_classes = []  # Temporarily disable authentication for testing
+    
+    def post(self, request):
+        """
+        Predict deal size range and sales timeline
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information
+            },
+            "opportunity_data": {
+                // Optional existing opportunity data
+            }
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            opportunity_data = request.data.get('opportunity_data', {})
+            
+            ai_service = GeminiAIService()
+            predictions = ai_service.predict_deal_size_and_timeline(lead_data, opportunity_data)
+            
+            return Response({
+                "success": True,
+                "predictions": predictions,
+                "predicted_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error predicting deal size and timeline: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to predict deal size and timeline: {str(e)}",
+                    "error_code": "PREDICTION_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SalesStageRecommendationView(APIView):
+    """API endpoint for recommending sales stage and advancement strategy"""
+    
+    permission_classes = []  # Temporarily disable authentication for testing
+    
+    def post(self, request):
+        """
+        Recommend appropriate sales stage and advancement strategy
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Original lead information
+            },
+            "opportunity_data": {
+                // Current opportunity data
+            },
+            "current_stage": "prospecting|qualification|proposal|negotiation"
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            opportunity_data = request.data.get('opportunity_data', {})
+            
+            if not lead_data or not opportunity_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "Both lead_data and opportunity_data are required",
+                        "error_code": "MISSING_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            current_stage = request.data.get('current_stage')
+            
+            ai_service = GeminiAIService()
+            stage_recommendations = ai_service.recommend_sales_stage(lead_data, opportunity_data, current_stage)
+            
+            return Response({
+                "success": True,
+                "stage_recommendations": stage_recommendations,
+                "recommended_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error recommending sales stage: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to recommend sales stage: {str(e)}",
+                    "error_code": "STAGE_RECOMMENDATION_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class RiskFactorAnalysisView(APIView):
+    """API endpoint for identifying risk factors and mitigation strategies"""
+    
+    permission_classes = []  # Temporarily disable authentication for testing
+    
+    def post(self, request):
+        """
+        Identify potential risk factors and suggest mitigation strategies
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information
+            },
+            "opportunity_data": {
+                // Opportunity details
+            },
+            "historical_data": {
+                // Optional historical risk patterns
+            }
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            opportunity_data = request.data.get('opportunity_data', {})
+            
+            if not lead_data or not opportunity_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "Both lead_data and opportunity_data are required",
+                        "error_code": "MISSING_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            historical_data = request.data.get('historical_data', {})
+            
+            ai_service = GeminiAIService()
+            risk_analysis = ai_service.identify_risk_factors_and_mitigation(lead_data, opportunity_data, historical_data)
+            
+            return Response({
+                "success": True,
+                "risk_analysis": risk_analysis,
+                "analyzed_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error analyzing risk factors: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to analyze risk factors: {str(e)}",
+                    "error_code": "RISK_ANALYSIS_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class HistoricalPatternAnalysisView(APIView):
+    """API endpoint for analyzing historical patterns to improve predictions"""
+    
+    permission_classes = []  # Temporarily disable authentication for testing
+    
+    def post(self, request):
+        """
+        Analyze historical data patterns for improved predictions
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Current lead data for comparison
+            },
+            "user_id": "optional_user_id_for_personalized_analysis"
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            user_id = request.data.get('user_id')
+            
+            ai_service = GeminiAIService()
+            historical_analysis = ai_service.analyze_historical_patterns(lead_data, user_id)
+            
+            return Response({
+                "success": True,
+                "historical_analysis": historical_analysis,
+                "analyzed_at": timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error analyzing historical patterns: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to analyze historical patterns: {str(e)}",
+                    "error_code": "HISTORICAL_ANALYSIS_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ComprehensiveOpportunityIntelligenceView(APIView):
+    """API endpoint for comprehensive opportunity conversion intelligence analysis"""
+    
+    permission_classes = []  # Temporarily disable authentication for testing
+    
+    def post(self, request):
+        """
+        Generate comprehensive opportunity conversion intelligence
+        
+        Expected payload:
+        {
+            "lead_data": {
+                // Lead information
+            },
+            "opportunity_data": {
+                // Optional opportunity data if already exists
+            },
+            "include_conversion_analysis": true,
+            "include_deal_predictions": true,
+            "include_stage_recommendations": true,
+            "include_risk_analysis": true,
+            "include_historical_patterns": true
+        }
+        """
+        try:
+            lead_data = request.data.get('lead_data', {})
+            if not lead_data:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "lead_data is required",
+                        "error_code": "MISSING_LEAD_DATA"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            opportunity_data = request.data.get('opportunity_data', {})
+            
+            # Get optional flags
+            include_conversion = request.data.get('include_conversion_analysis', True)
+            include_predictions = request.data.get('include_deal_predictions', True)
+            include_stage_recs = request.data.get('include_stage_recommendations', True)
+            include_risk = request.data.get('include_risk_analysis', True)
+            include_historical = request.data.get('include_historical_patterns', True)
+            
+            ai_service = GeminiAIService()
+            
+            # Initialize comprehensive intelligence response
+            intelligence = {
+                "success": True,
+                "lead_data": lead_data,
+                "opportunity_data": opportunity_data,
+                "analysis_timestamp": timezone.now().isoformat()
+            }
+            
+            # Generate conversion analysis if requested
+            if include_conversion:
+                historical_data = request.data.get('historical_data', {})
+                conversion_analysis = ai_service.analyze_opportunity_conversion_potential(lead_data, historical_data)
+                intelligence['conversion_analysis'] = conversion_analysis
+            
+            # Generate deal predictions if requested
+            if include_predictions:
+                predictions = ai_service.predict_deal_size_and_timeline(lead_data, opportunity_data)
+                intelligence['deal_predictions'] = predictions
+            
+            # Generate stage recommendations if requested and opportunity data exists
+            if include_stage_recs and opportunity_data:
+                current_stage = opportunity_data.get('stage')
+                stage_recommendations = ai_service.recommend_sales_stage(lead_data, opportunity_data, current_stage)
+                intelligence['stage_recommendations'] = stage_recommendations
+            
+            # Generate risk analysis if requested and opportunity data exists
+            if include_risk and opportunity_data:
+                historical_data = request.data.get('historical_data', {})
+                risk_analysis = ai_service.identify_risk_factors_and_mitigation(lead_data, opportunity_data, historical_data)
+                intelligence['risk_analysis'] = risk_analysis
+            
+            # Generate historical pattern analysis if requested
+            if include_historical:
+                user_id = request.data.get('user_id')
+                historical_analysis = ai_service.analyze_historical_patterns(lead_data, user_id)
+                intelligence['historical_analysis'] = historical_analysis
+            
+            # Add overall intelligence metadata
+            intelligence['intelligence_metadata'] = {
+                "components_included": {
+                    "conversion_analysis": include_conversion,
+                    "deal_predictions": include_predictions,
+                    "stage_recommendations": include_stage_recs,
+                    "risk_analysis": include_risk,
+                    "historical_patterns": include_historical
+                },
+                "overall_confidence": self._calculate_intelligence_confidence(intelligence),
+                "ai_model": "gemini-1.5-flash",
+                "analysis_version": "1.0"
+            }
+            
+            return Response(intelligence, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error generating comprehensive opportunity intelligence: {e}", exc_info=True)
+            return Response(
+                {
+                    "success": False,
+                    "error": f"Failed to generate opportunity intelligence: {str(e)}",
+                    "error_code": "OPPORTUNITY_INTELLIGENCE_FAILED"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _calculate_intelligence_confidence(self, intelligence: dict) -> float:
+        """Calculate overall confidence score for the opportunity intelligence"""
+        confidence_scores = []
+        
+        # Collect confidence scores from different components
+        if 'conversion_analysis' in intelligence:
+            conversion_confidence = intelligence['conversion_analysis'].get('conversion_confidence', 50)
+            confidence_scores.append(conversion_confidence)
+        
+        if 'deal_predictions' in intelligence:
+            deal_confidence = intelligence['deal_predictions'].get('deal_size_prediction', {}).get('confidence_level', 50)
+            timeline_confidence = intelligence['deal_predictions'].get('timeline_prediction', {}).get('confidence_level', 50)
+            confidence_scores.extend([deal_confidence, timeline_confidence])
+        
+        if 'stage_recommendations' in intelligence:
+            stage_confidence = intelligence['stage_recommendations'].get('advancement_analysis', {}).get('advancement_confidence', 50)
+            confidence_scores.append(stage_confidence)
+        
+        if 'risk_analysis' in intelligence:
+            risk_confidence = intelligence['risk_analysis'].get('overall_risk_assessment', {}).get('confidence', 50)
+            confidence_scores.append(risk_confidence)
+        
+        # Calculate average confidence if we have scores, otherwise return default
+        if confidence_scores:
+            return sum(confidence_scores) / len(confidence_scores)
+        else:
+            return 65.0  # Default confidence for opportunity intelligence

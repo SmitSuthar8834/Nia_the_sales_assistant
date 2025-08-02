@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIA Frontend Manual Test Suite</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            background: #2563eb;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            margin: -20px -20px 20px -20px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .test-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #1d4ed8;
+        }
+        .test-button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .result-box {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #dcfce7;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+        .error {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        .test-conversation {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-pass { background: #10b981; }
+        .status-fail { background: #ef4444; }
+        .status-pending { background: #f59e0b; }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 NIA Frontend Manual Test Suite</h1>
+    <p>This page helps you manually test the NIA Sales Assistant frontend interface. Run tests in order and verify results.</p>
+
+    <div class="test-grid">
+        <!-- API Connection Tests -->
+        <div class="test-container">
+            <div class="test-header">
+                <span class="status-indicator status-pending" id="api-status"></span>
+                API Connection Tests
+            </div>
+            
+            <button class="test-button" onclick="testAPIConnection()">Test API Connection</button>
+            <button class="test-button" onclick="testDebugEndpoint()">Test Debug Endpoint</button>
+            <button class="test-button" onclick="testLeadsEndpoint()">Test Leads Endpoint</button>
+            
+            <div class="result-box" id="api-results">Click buttons above to test API endpoints...</div>
+        </div>
+
+        <!-- Conversation Analysis Test -->
+        <div class="test-container">
+            <div class="test-header">
+                <span class="status-indicator status-pending" id="analysis-status"></span>
+                Conversation Analysis Test
+            </div>
+            
+            <textarea class="test-conversation" id="test-conversation" placeholder="Enter conversation text here...">Sales Rep (Sarah): Good afternoon, Mr. Rodriguez. Thank you for taking the time to meet with me today. I understand from our initial conversation that DataFlow Solutions is experiencing some challenges with your current customer management processes?
+
+Prospect (Miguel Rodriguez - VP of Operations): That's right, Sarah. We're a mid-market logistics company with about 350 employees across five locations. Honestly, we're drowning in spreadsheets and our team is using three different systems that don't talk to each other. But before we go further, I need to be upfront—we just implemented a new ERP system six months ago, and there's some... let's call it "change fatigue" in the organization.
+
+Miguel: Well, our customer retention has dropped 12% over the past year. Our account managers are spending 60% of their time on administrative tasks instead of actually managing relationships. And here's the kicker—last month we lost a $2.3 million contract because three different team members contacted the same client with conflicting information. The client felt we were disorganized and unprofessional.</textarea>
+            
+            <br><br>
+            <button class="test-button" onclick="testConversationAnalysis()">Analyze Conversation</button>
+            
+            <div class="result-box" id="analysis-results">Enter conversation text and click analyze...</div>
+        </div>
+
+        <!-- Lead Creation Test -->
+        <div class="test-container">
+            <div class="test-header">
+                <span class="status-indicator status-pending" id="lead-status"></span>
+                Lead Creation Test
+            </div>
+            
+            <button class="test-button" onclick="testLeadCreation()">Create Test Lead</button>
+            <button class="test-button" onclick="testLeadRetrieval()">Get All Leads</button>
+            
+            <div class="result-box" id="lead-results">Click buttons above to test lead management...</div>
+        </div>
+
+        <!-- AI Recommendations Test -->
+        <div class="test-container">
+            <div class="test-header">
+                <span class="status-indicator status-pending" id="recommendations-status"></span>
+                AI Recommendations Test
+            </div>
+            
+            <button class="test-button" onclick="testRecommendations()">Get AI Recommendations</button>
+            <button class="test-button" onclick="testQualityScore()">Test Quality Score</button>
+            
+            <div class="result-box" id="recommendations-results">Click buttons above to test AI recommendations...</div>
+        </div>
+
+        <!-- Frontend Interface Test -->
+        <div class="test-container">
+            <div class="test-header">
+                <span class="status-indicator status-pending" id="frontend-status"></span>
+                Frontend Interface Test
+            </div>
+            
+            <button class="test-button" onclick="testFrontendElements()">Check Frontend Elements</button>
+            <button class="test-button" onclick="openMainInterface()">Open Main Interface</button>
+            
+            <div class="result-box" id="frontend-results">Click buttons above to test frontend interface...</div>
+        </div>
+
+        <!-- Analytics Test -->
+        <div class="test-container">
+            <div class="test-header">
+                <span class="status-indicator status-pending" id="analytics-status"></span>
+                Analytics Test
+            </div>
+            
+            <button class="test-button" onclick="testAnalytics()">Get Analytics Data</button>
+            
+            <div class="result-box" id="analytics-results">Click button above to test analytics...</div>
+        </div>
+    </div>
+
+    <div class="test-container" style="margin-top: 30px;">
+        <div class="test-header">📊 Test Summary</div>
+        <div id="test-summary">Run tests above to see summary...</div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/ai';
+        let testResults = {};
+
+        function updateStatus(testName, success) {
+            testResults[testName] = success;
+            const indicator = document.getElementById(`${testName}-status`);
+            if (indicator) {
+                indicator.className = `status-indicator ${success ? 'status-pass' : 'status-fail'}`;
+            }
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const total = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r).length;
+            const summary = document.getElementById('test-summary');
+            
+            if (total === 0) {
+                summary.innerHTML = 'Run tests above to see summary...';
+                return;
+            }
+
+            const percentage = Math.round((passed / total) * 100);
+            summary.innerHTML = `
+                <strong>Tests Run:</strong> ${total}<br>
+                <strong>Passed:</strong> ${passed}<br>
+                <strong>Failed:</strong> ${total - passed}<br>
+                <strong>Success Rate:</strong> ${percentage}%<br><br>
+                ${percentage === 100 ? '🎉 All tests passed!' : '⚠️ Some tests failed - check results above'}
+            `;
+        }
+
+        async function testAPIConnection() {
+            const resultBox = document.getElementById('api-results');
+            resultBox.textContent = 'Testing API connection...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/test-connection/`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultBox.textContent = `✅ API Connection Success!\nModel: ${data.model}\nMessage: ${data.message}`;
+                    resultBox.className = 'result-box success';
+                    updateStatus('api', true);
+                } else {
+                    resultBox.textContent = `❌ API Connection Failed!\nError: ${data.error || 'Unknown error'}`;
+                    resultBox.className = 'result-box error';
+                    updateStatus('api', false);
+                }
+            } catch (error) {
+                resultBox.textContent = `❌ API Connection Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+                updateStatus('api', false);
+            }
+        }
+
+        async function testDebugEndpoint() {
+            const resultBox = document.getElementById('api-results');
+            resultBox.textContent = 'Testing debug endpoint...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/debug-test/`);
+                const data = await response.json();
+                
+                resultBox.textContent = `Debug Endpoint Result:\n${JSON.stringify(data, null, 2)}`;
+                resultBox.className = data.success ? 'result-box success' : 'result-box error';
+            } catch (error) {
+                resultBox.textContent = `❌ Debug Endpoint Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+            }
+        }
+
+        async function testLeadsEndpoint() {
+            const resultBox = document.getElementById('api-results');
+            resultBox.textContent = 'Testing leads endpoint...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/leads/`);
+                const data = await response.json();
+                
+                resultBox.textContent = `Leads Endpoint Result:\nFound ${data.results ? data.results.length : 0} leads\n${JSON.stringify(data, null, 2)}`;
+                resultBox.className = 'result-box success';
+            } catch (error) {
+                resultBox.textContent = `❌ Leads Endpoint Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+            }
+        }
+
+        async function testConversationAnalysis() {
+            const resultBox = document.getElementById('analysis-results');
+            const conversationText = document.getElementById('test-conversation').value;
+            
+            if (!conversationText.trim()) {
+                resultBox.textContent = '❌ Please enter conversation text first';
+                resultBox.className = 'result-box error';
+                return;
+            }
+
+            resultBox.textContent = 'Analyzing conversation... (this may take 10-30 seconds)';
+            resultBox.className = 'result-box';
+            
+            try {
+                const response = await fetch(`${API_BASE}/analyze/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        conversation_text: conversationText,
+                        context: {
+                            source: 'meeting',
+                            urgency: 'high'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.lead_information) {
+                    const leadInfo = data.lead_information;
+                    resultBox.textContent = `✅ Conversation Analysis Success!
+                    
+Company: ${leadInfo.company_name || 'N/A'}
+Contact: ${leadInfo.contact_details?.name || 'N/A'}
+Title: ${leadInfo.contact_details?.title || 'N/A'}
+Industry: ${leadInfo.industry || 'N/A'}
+Company Size: ${leadInfo.company_size || 'N/A'}
+Pain Points: ${leadInfo.pain_points?.length || 0} identified
+Requirements: ${leadInfo.requirements?.length || 0} identified
+Budget: ${leadInfo.budget_info || 'N/A'}
+Timeline: ${leadInfo.timeline || 'N/A'}
+Urgency: ${leadInfo.urgency_level || 'N/A'}
+Confidence Score: ${leadInfo.extraction_metadata?.confidence_score || 'N/A'}%
+Data Completeness: ${leadInfo.extraction_metadata?.data_completeness || 'N/A'}%
+
+Full Response:
+${JSON.stringify(data, null, 2)}`;
+                    resultBox.className = 'result-box success';
+                    updateStatus('analysis', true);
+                } else {
+                    resultBox.textContent = `❌ Analysis Failed!\nError: ${data.error || 'Unknown error'}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                    resultBox.className = 'result-box error';
+                    updateStatus('analysis', false);
+                }
+            } catch (error) {
+                resultBox.textContent = `❌ Analysis Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+                updateStatus('analysis', false);
+            }
+        }
+
+        async function testLeadCreation() {
+            const resultBox = document.getElementById('lead-results');
+            resultBox.textContent = 'Creating test lead...';
+            
+            const testLead = {
+                company_name: 'Test Company ' + Date.now(),
+                contact_info: {
+                    name: 'John Test',
+                    email: 'john@testcompany.com',
+                    phone: '555-0123'
+                },
+                source: 'meeting',
+                pain_points: ['Data silos', 'Manual processes'],
+                requirements: ['CRM integration', 'Automation'],
+                industry: 'Technology',
+                company_size: '100-500 employees'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/leads/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testLead)
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 201 && data.lead) {
+                    resultBox.textContent = `✅ Lead Created Successfully!
+                    
+Lead ID: ${data.lead.id}
+Company: ${data.lead.company_name}
+Contact: ${data.lead.contact_name}
+Status: ${data.lead.status}
+Created: ${data.lead.created_at}
+
+Full Response:
+${JSON.stringify(data, null, 2)}`;
+                    resultBox.className = 'result-box success';
+                    updateStatus('lead', true);
+                } else {
+                    resultBox.textContent = `❌ Lead Creation Failed!\nStatus: ${response.status}\nError: ${data.error || 'Unknown error'}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                    resultBox.className = 'result-box error';
+                    updateStatus('lead', false);
+                }
+            } catch (error) {
+                resultBox.textContent = `❌ Lead Creation Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+                updateStatus('lead', false);
+            }
+        }
+
+        async function testLeadRetrieval() {
+            const resultBox = document.getElementById('lead-results');
+            resultBox.textContent = 'Retrieving all leads...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/leads/`);
+                const data = await response.json();
+                
+                resultBox.textContent = `✅ Leads Retrieved Successfully!
+                
+Total Leads: ${data.results ? data.results.length : 0}
+Count: ${data.count || 0}
+
+Leads Summary:
+${data.results ? data.results.map(lead => 
+    `- ${lead.company_name} (${lead.contact_name || 'No contact'}) - ${lead.status}`
+).join('\n') : 'No leads found'}
+
+Full Response:
+${JSON.stringify(data, null, 2)}`;
+                resultBox.className = 'result-box success';
+            } catch (error) {
+                resultBox.textContent = `❌ Lead Retrieval Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+            }
+        }
+
+        async function testRecommendations() {
+            const resultBox = document.getElementById('recommendations-results');
+            resultBox.textContent = 'Getting AI recommendations... (this may take 10-30 seconds)';
+            
+            const testLeadData = {
+                company_name: 'DataFlow Solutions',
+                contact_details: {
+                    name: 'Miguel Rodriguez',
+                    title: 'VP of Operations'
+                },
+                pain_points: [
+                    'Customer retention dropped 12%',
+                    'Lost $2.3M contract',
+                    'Account managers spending 60% time on admin'
+                ],
+                requirements: [
+                    'Unified customer data platform',
+                    'ERP integration',
+                    'Phased implementation'
+                ],
+                budget_info: '$50K-$150K annually',
+                industry: 'Logistics',
+                company_size: '350 employees'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/comprehensive-recommendations/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        lead_data: testLeadData,
+                        include_quality_score: true,
+                        include_sales_strategy: true,
+                        include_industry_insights: true,
+                        include_next_steps: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.recommendations) {
+                    const rec = data.recommendations;
+                    resultBox.textContent = `✅ AI Recommendations Success!
+                    
+Quality Score: ${rec.quality_score || 'N/A'}
+Conversion Probability: ${rec.conversion_probability || 'N/A'}%
+Lead Score: ${rec.lead_score || 'N/A'}
+Sales Strategy Items: ${rec.sales_strategy?.length || 0}
+Next Steps: ${rec.next_steps?.length || 0}
+Industry Insights: ${rec.industry_insights?.length || 0}
+
+Full Response:
+${JSON.stringify(data, null, 2)}`;
+                    resultBox.className = 'result-box success';
+                    updateStatus('recommendations', true);
+                } else {
+                    resultBox.textContent = `❌ Recommendations Failed!\nError: ${data.error || 'Unknown error'}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                    resultBox.className = 'result-box error';
+                    updateStatus('recommendations', false);
+                }
+            } catch (error) {
+                resultBox.textContent = `❌ Recommendations Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+                updateStatus('recommendations', false);
+            }
+        }
+
+        async function testQualityScore() {
+            const resultBox = document.getElementById('recommendations-results');
+            resultBox.textContent = 'Testing quality score calculation...';
+            
+            const testLeadData = {
+                company_name: 'DataFlow Solutions',
+                contact_details: {
+                    name: 'Miguel Rodriguez',
+                    email: 'miguel@dataflow.com',
+                    title: 'VP of Operations'
+                },
+                pain_points: ['Customer retention issues', 'Administrative burden'],
+                requirements: ['CRM integration', 'Process automation'],
+                budget_info: '$100K',
+                industry: 'Logistics'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/lead-quality-score/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        lead_data: testLeadData
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultBox.textContent = `Quality Score Test Result:\n${JSON.stringify(data, null, 2)}`;
+                resultBox.className = data.success ? 'result-box success' : 'result-box error';
+            } catch (error) {
+                resultBox.textContent = `❌ Quality Score Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+            }
+        }
+
+        async function testAnalytics() {
+            const resultBox = document.getElementById('analytics-results');
+            resultBox.textContent = 'Getting analytics data...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/analytics/`);
+                const data = await response.json();
+                
+                resultBox.textContent = `✅ Analytics Retrieved Successfully!
+                
+Total Leads: ${data.total_leads || 0}
+High Quality Leads: ${data.high_quality_leads || 0}
+Average Lead Score: ${data.average_lead_score || 'N/A'}
+Leads with Insights: ${data.leads_with_insights || 0}
+
+Status Distribution:
+${data.status_distribution ? Object.entries(data.status_distribution)
+    .map(([status, count]) => `- ${status}: ${count}`)
+    .join('\n') : 'No status data'}
+
+Full Response:
+${JSON.stringify(data, null, 2)}`;
+                resultBox.className = 'result-box success';
+                updateStatus('analytics', true);
+            } catch (error) {
+                resultBox.textContent = `❌ Analytics Error!\nError: ${error.message}`;
+                resultBox.className = 'result-box error';
+                updateStatus('analytics', false);
+            }
+        }
+
+        function testFrontendElements() {
+            const resultBox = document.getElementById('frontend-results');
+            
+            // Check if we can access the main interface elements
+            const checks = [
+                { name: 'Current Page Title', test: () => document.title.includes('NIA') },
+                { name: 'CSS Loaded', test: () => getComputedStyle(document.body).fontFamily.includes('system') },
+                { name: 'Can Access Main Interface', test: () => window.location.origin }
+            ];
+            
+            let results = 'Frontend Elements Check:\n\n';
+            let allPassed = true;
+            
+            checks.forEach(check => {
+                try {
+                    const passed = check.test();
+                    results += `${passed ? '✅' : '❌'} ${check.name}: ${passed ? 'PASS' : 'FAIL'}\n`;
+                    if (!passed) allPassed = false;
+                } catch (error) {
+                    results += `❌ ${check.name}: ERROR - ${error.message}\n`;
+                    allPassed = false;
+                }
+            });
+            
+            results += `\nMain Interface URL: ${window.location.origin}\n`;
+            results += `Current Page: ${window.location.pathname}\n`;
+            
+            resultBox.textContent = results;
+            resultBox.className = allPassed ? 'result-box success' : 'result-box error';
+            updateStatus('frontend', allPassed);
+        }
+
+        function openMainInterface() {
+            window.open('/', '_blank');
+        }
+
+        // Auto-run basic tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testFrontendElements();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

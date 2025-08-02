@@ -31,6 +31,14 @@ urlpatterns = [
     path('comprehensive-recommendations/', views.ComprehensiveRecommendationsView.as_view(), name='comprehensive_recommendations'),
     path('next-steps/', views.NextStepsRecommendationsView.as_view(), name='next_steps_recommendations'),
     
+    # Opportunity Conversion Intelligence endpoints (Task 10)
+    path('opportunity-conversion-analysis/', views.OpportunityConversionAnalysisView.as_view(), name='opportunity_conversion_analysis'),
+    path('deal-size-timeline-prediction/', views.DealSizeTimelinePredictionView.as_view(), name='deal_size_timeline_prediction'),
+    path('sales-stage-recommendation/', views.SalesStageRecommendationView.as_view(), name='sales_stage_recommendation'),
+    path('risk-factor-analysis/', views.RiskFactorAnalysisView.as_view(), name='risk_factor_analysis'),
+    path('historical-pattern-analysis/', views.HistoricalPatternAnalysisView.as_view(), name='historical_pattern_analysis'),
+    path('comprehensive-opportunity-intelligence/', views.ComprehensiveOpportunityIntelligenceView.as_view(), name='comprehensive_opportunity_intelligence'),
+    
     # Utility endpoints
     path('test-connection/', views.TestGeminiConnectionView.as_view(), name='test_connection'),
     path('quota-status/', views.GeminiQuotaStatusView.as_view(), name='quota_status'),
