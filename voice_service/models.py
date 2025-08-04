@@ -136,3 +136,8 @@ class VoiceConfiguration(models.Model):
     
     def __str__(self):
         return f"Voice Config for {self.user.username}"
+# Import chat models to ensure they're registered with Django
+from .chat_models import (
+    ChatSession, ChatMessage, ChatBotCommand, 
+    ChatAnalytics, ChatSearchHistory, ChatFile
+)

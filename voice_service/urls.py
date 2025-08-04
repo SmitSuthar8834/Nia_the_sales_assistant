@@ -4,6 +4,7 @@ URL configuration for voice service
 
 from django.urls import path
 from . import views
+from . import chat_views
 
 app_name = 'voice_service'
 
@@ -29,4 +30,14 @@ urlpatterns = [
     path('session/<str:session_id>/summary/', views.conversation_summary, name='conversation_summary'),
     path('session/<str:session_id>/audio-files/', views.session_audio_files, name='session_audio_files'),
     path('session/<str:session_id>/audio/<str:filename>/', views.download_audio_file, name='download_audio_file'),
+    
+    # Chat endpoints
+    path('chat/create/', chat_views.create_chat_session, name='create_chat_session'),
+    path('chat/sessions/', chat_views.get_chat_sessions, name='get_chat_sessions'),
+    path('chat/session/<str:session_id>/', chat_views.get_chat_session, name='get_chat_session'),
+    path('chat/session/<str:session_id>/end/', chat_views.end_chat_session, name='end_chat_session'),
+    path('chat/session/<str:session_id>/upload/', chat_views.upload_chat_file, name='upload_chat_file'),
+    path('chat/session/<str:session_id>/analytics/', chat_views.get_chat_analytics, name='get_chat_analytics'),
+    path('chat/commands/', chat_views.get_bot_commands, name='get_bot_commands'),
+    path('chat/search/', chat_views.search_chat_history, name='search_chat_history'),
 ]

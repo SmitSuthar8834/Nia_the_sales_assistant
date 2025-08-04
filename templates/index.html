@@ -20,6 +20,7 @@
                 <a href="#" class="nav-link active" data-view="leads">Leads</a>
                 <a href="#" class="nav-link" data-view="create">Create Lead</a>
                 <a href="#" class="nav-link" data-view="analytics">Analytics</a>
+                <a href="#" class="nav-link" data-view="chat">Smart Chat</a>
             </nav>
         </div>
     </header>
@@ -367,7 +368,162 @@
                 </div>
             </div>
         </div>
+
+        <!-- Smart Chat View -->
+        <div id="chat-view" class="view hidden">
+            <div class="chat-container">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h2>Smart Chat with NIA</h2>
+                        <div class="chat-status">
+                            <span id="connection-status" class="connection-status disconnected">Disconnected</span>
+                            <div class="availability-control">
+                                <label class="availability-label">
+                                    <input type="checkbox" id="availability-toggle" />
+                                    <span class="availability-slider"></span>
+                                </label>
+                                <span id="availability-status" class="availability-status unavailable">Chat only</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button id="voice-transition-btn" class="btn btn-primary" title="Switch to voice call">
+                            🎤 Voice Call
+                        </button>
+                        <button id="search-toggle-btn" class="btn btn-outline" title="Search chat history">
+                            🔍 Search
+                        </button>
+                        <button id="end-chat-btn" class="btn btn-danger" title="End chat session">
+                            ❌ End Chat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Body -->
+                <div class="chat-body">
+                    <!-- Chat Messages Area -->
+                    <div class="chat-messages-container">
+                        <div id="chat-messages" class="chat-messages">
+                            <!-- Messages will be populated here -->
+                        </div>
+                        <div id="typing-indicator" class="typing-indicator" style="display: none;">
+                            NIA is typing...
+                        </div>
+                    </div>
+
+                    <!-- Chat Sidebar -->
+                    <div class="chat-sidebar">
+                        <!-- Search Panel -->
+                        <div id="search-panel" class="sidebar-panel hidden">
+                            <div class="panel-header">
+                                <h3>Search Chat History</h3>
+                                <button class="panel-close" onclick="document.getElementById('search-panel').classList.add('hidden')">×</button>
+                            </div>
+                            <div class="panel-body">
+                                <div class="search-input-group">
+                                    <input type="text" id="chat-search" class="form-input" placeholder="Search messages...">
+                                    <button class="btn btn-primary btn-sm" onclick="window.chatManager.searchChatHistory(document.getElementById('chat-search').value)">
+                                        Search
+                                    </button>
+                                </div>
+                                <div id="search-results" class="search-results">
+                                    <!-- Search results will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bot Commands Panel -->
+                        <div class="sidebar-panel">
+                            <div class="panel-header">
+                                <h3>Quick Commands</h3>
+                            </div>
+                            <div class="panel-body">
+                                <div id="command-suggestions" class="command-suggestions">
+                                    <!-- Command suggestions will be populated here -->
+                                </div>
+                                <div class="command-help">
+                                    <p><strong>Available Commands:</strong></p>
+                                    <ul>
+                                        <li><code>/help</code> - Show all commands</li>
+                                        <li><code>/lead [company]</code> - Get lead info</li>
+                                        <li><code>/voice</code> - Switch to voice call</li>
+                                        <li><code>/search [term]</code> - Search leads</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Sharing Panel -->
+                        <div class="sidebar-panel">
+                            <div class="panel-header">
+                                <h3>File Sharing</h3>
+                            </div>
+                            <div class="panel-body">
+                                <div class="file-upload-area">
+                                    <input type="file" id="file-input" class="file-input" multiple>
+                                    <label for="file-input" class="file-upload-label">
+                                        📎 Click to upload files
+                                        <span class="file-upload-hint">Max 10MB per file</span>
+                                    </label>
+                                </div>
+                                <div id="uploaded-files" class="uploaded-files">
+                                    <!-- Uploaded files will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <textarea 
+                            id="chat-input" 
+                            class="chat-input" 
+                            placeholder="Type your message... (Use / for commands)"
+                            rows="1"
+                        ></textarea>
+                        <div class="chat-input-actions">
+                            <button id="emoji-btn" class="input-action-btn" title="Add emoji">😊</button>
+                            <button id="attach-btn" class="input-action-btn" title="Attach file" onclick="document.getElementById('file-input').click()">📎</button>
+                            <button id="send-button" class="btn btn-primary" title="Send message">
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Session Controls -->
+            <div class="chat-controls">
+                <button class="btn btn-outline" onclick="window.chatManager.createChatSession()">
+                    💬 New Chat Session
+                </button>
+                <button class="btn btn-outline" onclick="showChatSessions()">
+                    📋 Chat History
+                </button>
+                <button class="btn btn-outline" onclick="showChatAnalytics()">
+                    📊 Chat Analytics
+                </button>
+            </div>
+        </div>
     </div>
+
+    <!-- Voice Transition Modal -->
+    <div id="voice-transition-modal" class="voice-transition-modal hidden">
+        <div class="voice-transition-content">
+            <h3>Voice Call Ready</h3>
+            <p>Your voice call is ready. Click the button below to join the call.</p>
+            <div class="voice-transition-actions">
+                <button id="join-voice-call" class="btn btn-primary">Join Voice Call</button>
+                <button class="btn btn-outline" onclick="document.getElementById('voice-transition-modal').classList.add('hidden')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alert-container" class="alert-container"></div>
 
     <!-- Lead Edit Modal -->
     <div id="edit-modal" class="modal hidden">
@@ -465,6 +621,65 @@
         </div>
     </div>
 
+    <!-- Voice Transition Modal -->
+    <div id="voice-transition-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Voice Call Ready</h3>
+                <button class="modal-close" onclick="document.getElementById('voice-transition-modal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="voice-call-info">
+                    <div class="voice-call-icon">🎤</div>
+                    <p>Your voice call is ready! Click below to join the call. Your chat context will be preserved.</p>
+                    <div class="voice-call-features">
+                        <div class="feature">✓ Context preserved from chat</div>
+                        <div class="feature">✓ Real-time transcription</div>
+                        <div class="feature">✓ AI-powered insights</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="join-voice-call" class="btn btn-success btn-lg">
+                        🎤 Join Voice Call
+                    </button>
+                    <button class="btn btn-outline" onclick="document.getElementById('voice-transition-modal').style.display='none'">
+                        Continue Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Sessions Modal -->
+    <div id="chat-sessions-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Chat History</h3>
+                <button class="modal-close" onclick="document.getElementById('chat-sessions-modal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="chat-sessions-list" class="chat-sessions-list">
+                    <!-- Chat sessions will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Analytics Modal -->
+    <div id="chat-analytics-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Chat Analytics</h3>
+                <button class="modal-close" onclick="document.getElementById('chat-analytics-modal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="chat-analytics-content" class="analytics-grid">
+                    <!-- Analytics will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Alert Container -->
     <div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 400px;">
         <!-- Alerts will be dynamically added here -->
@@ -475,6 +690,7 @@
     
     <script src="{% static 'js/api.js' %}"></script>
     <script src="{% static 'js/ui.js' %}"></script>
+    <script src="{% static 'js/chat.js' %}"></script>
     <script src="{% static 'js/main.js' %}"></script>
 </body>
 </html>
