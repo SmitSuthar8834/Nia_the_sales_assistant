@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Configuration{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .main-content {
+            min-height: 100vh;
+        }
+        .template-card {
+            transition: transform 0.2s;
+        }
+        .template-card:hover {
+            transform: translateY(-2px);
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: white !important;
+            border-radius: 0.375rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'admin_config:dashboard' %}">
+                <i class="fas fa-cogs me-2"></i>NIA Admin Config
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_section == 'dashboard' %}active{% endif %}" 
+                           href="{% url 'admin_config:dashboard' %}">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_section == 'integrations' %}active{% endif %}" 
+                           href="{% url 'admin_config:integrations' %}">
+                            <i class="fas fa-plug me-1"></i>Integrations
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_section == 'templates' %}active{% endif %}" 
+                           href="{% url 'admin_config:templates' %}">
+                            <i class="fas fa-file-code me-1"></i>Templates
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_section == 'workflows' %}active{% endif %}" 
+                           href="{% url 'admin_config:workflows' %}">
+                            <i class="fas fa-project-diagram me-1"></i>Workflows
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_section == 'backups' %}active{% endif %}" 
+                           href="{% url 'admin_config:backups' %}">
+                            <i class="fas fa-database me-1"></i>Backups
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ user.username|default:"Admin" }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'admin_config:permissions' %}">
+                                <i class="fas fa-users-cog me-1"></i>Permissions
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_config:audit' %}">
+                                <i class="fas fa-history me-1"></i>Audit Logs
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/admin/">
+                                <i class="fas fa-cog me-1"></i>Django Admin
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="row">
+            <main class="col-12 main-content">
+                <div class="container-fluid py-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- CSRF Token for AJAX requests -->
+    {% csrf_token %}
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

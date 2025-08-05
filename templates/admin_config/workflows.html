@@ -1,0 +1,533 @@
+{% extends 'admin_config/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-project-diagram me-2"></i>Workflow Management</h1>
+            <div>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addWorkflowModal">
+                    <i class="fas fa-plus me-1"></i>Create Workflow
+                </button>
+                <button class="btn btn-outline-primary" onclick="refreshWorkflows()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflows Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Workflows</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="workflowsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Trigger Type</th>
+                                <th>Status</th>
+                                <th>Executions</th>
+                                <th>Success Rate</th>
+                                <th>Last Execution</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading workflows...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visual Workflow Builder Modal -->
+<div class="modal fade" id="workflowBuilderModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-project-diagram me-2"></i>Visual Workflow Builder</h5>
+                <div class="btn-group me-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveWorkflowDesign()">
+                        <i class="fas fa-save me-1"></i>Save
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearWorkflow()">
+                        <i class="fas fa-trash me-1"></i>Clear
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="exportWorkflow()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row g-0 h-100">
+                    <!-- Toolbox -->
+                    <div class="col-md-2 bg-light border-end">
+                        <div class="p-3">
+                            <h6><i class="fas fa-tools me-2"></i>Toolbox</h6>
+                            <div class="d-grid gap-2">
+                                <div class="workflow-tool" draggable="true" data-node-type="trigger" ondragstart="drag(event)">
+                                    <i class="fas fa-play text-success me-2"></i>Trigger
+                                </div>
+                                <div class="workflow-tool" draggable="true" data-node-type="action" ondragstart="drag(event)">
+                                    <i class="fas fa-cog text-primary me-2"></i>Action
+                                </div>
+                                <div class="workflow-tool" draggable="true" data-node-type="condition" ondragstart="drag(event)">
+                                    <i class="fas fa-question text-warning me-2"></i>Condition
+                                </div>
+                                <div class="workflow-tool" draggable="true" data-node-type="integration" ondragstart="drag(event)">
+                                    <i class="fas fa-plug text-purple me-2"></i>Integration
+                                </div>
+                                <div class="workflow-tool" draggable="true" data-node-type="end" ondragstart="drag(event)">
+                                    <i class="fas fa-stop text-danger me-2"></i>End
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas -->
+                    <div class="col-md-8">
+                        <div class="workflow-canvas h-100" id="workflowCanvas" ondrop="drop(event)" ondragover="allowDrop(event)">
+                            <!-- Workflow nodes will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Properties Panel -->
+                    <div class="col-md-2 bg-light border-start">
+                        <div class="p-3">
+                            <div id="nodeConfigPanel" style="display: none;">
+                                <!-- Node configuration will be shown here -->
+                            </div>
+                            <div id="workflowProperties">
+                                <h6><i class="fas fa-cog me-2"></i>Workflow Properties</h6>
+                                <form id="workflowPropertiesForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-control form-control-sm" name="name" placeholder="Workflow Name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Description</label>
+                                        <textarea class="form-control form-control-sm" name="description" rows="3"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Trigger Type</label>
+                                        <select class="form-select form-select-sm" name="trigger_type">
+                                            <option value="manual">Manual</option>
+                                            <option value="schedule">Scheduled</option>
+                                            <option value="event">Event-based</option>
+                                            <option value="webhook">Webhook</option>
+                                            <option value="api_call">API Call</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Workflow Modal -->
+<div class="modal fade" id="addWorkflowModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create New Workflow</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <p class="text-muted">Choose how you want to create your workflow:</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 cursor-pointer" onclick="openVisualBuilder()">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-project-diagram fa-3x text-primary mb-3"></i>
+                                    <h5>Visual Builder</h5>
+                                    <p class="text-muted">Drag and drop interface for creating workflows</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 cursor-pointer" onclick="showQuickForm()">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-edit fa-3x text-success mb-3"></i>
+                                    <h5>Quick Form</h5>
+                                    <p class="text-muted">Simple form for basic workflows</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="quickWorkflowForm" style="display: none;">
+                    <form id="addWorkflowForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Workflow Name *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Trigger Type *</label>
+                                <select class="form-select" name="trigger_type" required>
+                                    <option value="">Select Trigger</option>
+                                    <option value="manual">Manual Trigger</option>
+                                    <option value="schedule">Scheduled</option>
+                                    <option value="event">Event-based</option>
+                                    <option value="webhook">Webhook</option>
+                                    <option value="api_call">API Call</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="createWorkflowBtn" onclick="saveWorkflow()" style="display: none;">
+                    <i class="fas fa-save me-1"></i>Create Workflow
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_config/js/workflow-builder.js' %}"></script>
+<script>
+// Workflows management JavaScript
+let workflows = [];
+let currentEditingWorkflow = null;
+
+$(document).ready(function() {
+    loadWorkflows();
+});
+
+function loadWorkflows() {
+    AdminConfig.showLoading('Loading workflows...');
+    
+    AdminConfig.getWorkflows()
+        .then(data => {
+            workflows = data.results || data;
+            renderWorkflowsTable();
+            AdminConfig.hideLoading();
+        })
+        .catch(error => {
+            AdminConfig.hideLoading();
+            AdminConfig.showAlert('Failed to load workflows: ' + error.message, 'danger');
+        });
+}
+
+function renderWorkflowsTable() {
+    const tbody = $('#workflowsTable tbody');
+    tbody.empty();
+    
+    if (workflows.length === 0) {
+        tbody.html(`
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    <i class="fas fa-info-circle me-2"></i>No workflows found
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    workflows.forEach(workflow => {
+        const statusBadge = workflow.is_active ? 
+            '<span class="badge bg-success">Active</span>' : 
+            '<span class="badge bg-secondary">Inactive</span>';
+        
+        const successRate = workflow.success_rate ? 
+            `${Math.round(workflow.success_rate * 100)}%` : 'N/A';
+        
+        const row = `
+            <tr>
+                <td>
+                    <div class="fw-bold">${workflow.name}</div>
+                    <small class="text-muted">${workflow.description || 'No description'}</small>
+                </td>
+                <td><span class="badge bg-info">${workflow.trigger_type_display}</span></td>
+                <td>${statusBadge}</td>
+                <td>${workflow.execution_count || 0}</td>
+                <td>${successRate}</td>
+                <td>${AdminConfig.formatRelativeTime(workflow.last_execution)}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editWorkflow('${workflow.id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="executeWorkflow('${workflow.id}')" title="Execute">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="duplicateWorkflow('${workflow.id}')" title="Duplicate">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteWorkflow('${workflow.id}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+}
+
+function refreshWorkflows() {
+    loadWorkflows();
+}
+
+// Modal functions
+function openVisualBuilder() {
+    $('#addWorkflowModal').modal('hide');
+    $('#workflowBuilderModal').modal('show');
+    
+    // Initialize workflow builder if not already done
+    if (!workflowBuilder) {
+        workflowBuilder = new WorkflowBuilder('workflowCanvas');
+    }
+}
+
+function showQuickForm() {
+    $('#quickWorkflowForm').show();
+    $('#createWorkflowBtn').show();
+}
+
+function saveWorkflow() {
+    const form = $('#addWorkflowForm');
+    
+    if (!AdminConfig.validateForm(form)) {
+        return;
+    }
+    
+    const formData = new FormData(form[0]);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Add default workflow configuration
+    data.trigger_config = {};
+    data.workflow_steps = [];
+    data.visual_config = {};
+    
+    AdminConfig.showLoading('Creating workflow...');
+    
+    AdminConfig.apiRequest('/admin-config/api/workflows/', {
+        method: 'POST',
+        data: data
+    })
+    .then(response => {
+        AdminConfig.hideLoading();
+        $('#addWorkflowModal').modal('hide');
+        AdminConfig.showAlert('Workflow created successfully', 'success');
+        loadWorkflows();
+        form[0].reset();
+        $('#quickWorkflowForm').hide();
+        $('#createWorkflowBtn').hide();
+    })
+    .catch(error => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Failed to create workflow: ' + error.message, 'danger');
+    });
+}
+
+function saveWorkflowDesign() {
+    if (!workflowBuilder) return;
+    
+    const form = $('#workflowPropertiesForm');
+    const formData = new FormData(form[0]);
+    const data = Object.fromEntries(formData.entries());
+    
+    if (!data.name) {
+        AdminConfig.showAlert('Please enter a workflow name', 'warning');
+        return;
+    }
+    
+    // Get workflow design from builder
+    const workflowDesign = workflowBuilder.exportWorkflow();
+    
+    data.trigger_config = {};
+    data.workflow_steps = workflowDesign.nodes;
+    data.visual_config = {
+        nodes: workflowDesign.nodes,
+        connections: workflowDesign.connections,
+        metadata: workflowDesign.metadata
+    };
+    
+    AdminConfig.showLoading('Saving workflow...');
+    
+    const url = currentEditingWorkflow ? 
+        `/admin-config/api/workflows/${currentEditingWorkflow.id}/` : 
+        '/admin-config/api/workflows/';
+    const method = currentEditingWorkflow ? 'PUT' : 'POST';
+    
+    AdminConfig.apiRequest(url, {
+        method: method,
+        data: data
+    })
+    .then(response => {
+        AdminConfig.hideLoading();
+        $('#workflowBuilderModal').modal('hide');
+        AdminConfig.showAlert(`Workflow ${currentEditingWorkflow ? 'updated' : 'created'} successfully`, 'success');
+        loadWorkflows();
+        currentEditingWorkflow = null;
+        workflowBuilder.clear();
+        form[0].reset();
+    })
+    .catch(error => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert(`Failed to ${currentEditingWorkflow ? 'update' : 'create'} workflow: ` + error.message, 'danger');
+    });
+}
+
+function clearWorkflow() {
+    if (workflowBuilder && confirm('Are you sure you want to clear the workflow?')) {
+        workflowBuilder.clear();
+    }
+}
+
+function exportWorkflow() {
+    if (!workflowBuilder) return;
+    
+    const workflowData = workflowBuilder.exportWorkflow();
+    const dataStr = JSON.stringify(workflowData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = 'workflow-export.json';
+    link.click();
+}
+
+function editWorkflow(workflowId) {
+    const workflow = workflows.find(w => w.id === workflowId);
+    if (!workflow) return;
+    
+    currentEditingWorkflow = workflow;
+    
+    // Populate form
+    $('#workflowPropertiesForm input[name="name"]').val(workflow.name);
+    $('#workflowPropertiesForm textarea[name="description"]').val(workflow.description || '');
+    $('#workflowPropertiesForm select[name="trigger_type"]').val(workflow.trigger_type);
+    
+    // Open visual builder
+    $('#workflowBuilderModal').modal('show');
+    
+    // Initialize builder if needed
+    if (!workflowBuilder) {
+        workflowBuilder = new WorkflowBuilder('workflowCanvas');
+    }
+    
+    // Load workflow design
+    if (workflow.visual_config && workflow.visual_config.nodes) {
+        setTimeout(() => {
+            workflowBuilder.importWorkflow(workflow.visual_config);
+        }, 500);
+    }
+}
+
+function executeWorkflow(workflowId) {
+    AdminConfig.showLoading('Executing workflow...');
+    
+    AdminConfig.apiRequest(`/admin-config/api/workflows/${workflowId}/execute/`, {
+        method: 'POST'
+    })
+    .then(response => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Workflow executed successfully', 'success');
+        loadWorkflows();
+    })
+    .catch(error => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Failed to execute workflow: ' + error.message, 'danger');
+    });
+}
+
+function duplicateWorkflow(workflowId) {
+    const workflow = workflows.find(w => w.id === workflowId);
+    if (!workflow) return;
+    
+    const duplicateData = {
+        name: `${workflow.name} (Copy)`,
+        description: workflow.description,
+        trigger_type: workflow.trigger_type,
+        trigger_config: workflow.trigger_config,
+        workflow_steps: workflow.workflow_steps,
+        visual_config: workflow.visual_config
+    };
+    
+    AdminConfig.showLoading('Duplicating workflow...');
+    
+    AdminConfig.apiRequest('/admin-config/api/workflows/', {
+        method: 'POST',
+        data: duplicateData
+    })
+    .then(response => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Workflow duplicated successfully', 'success');
+        loadWorkflows();
+    })
+    .catch(error => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Failed to duplicate workflow: ' + error.message, 'danger');
+    });
+}
+
+function deleteWorkflow(workflowId) {
+    const workflow = workflows.find(w => w.id === workflowId);
+    if (!workflow) return;
+    
+    if (!confirm(`Are you sure you want to delete "${workflow.name}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    AdminConfig.showLoading('Deleting workflow...');
+    
+    AdminConfig.apiRequest(`/admin-config/api/workflows/${workflowId}/`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Workflow deleted successfully', 'success');
+        loadWorkflows();
+    })
+    .catch(error => {
+        AdminConfig.hideLoading();
+        AdminConfig.showAlert('Failed to delete workflow: ' + error.message, 'danger');
+    });
+}
+
+// Drag and drop functions for workflow builder
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.dataset.nodeType);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    // This is handled by the WorkflowBuilder class
+}
+</script>
+{% endblock %}

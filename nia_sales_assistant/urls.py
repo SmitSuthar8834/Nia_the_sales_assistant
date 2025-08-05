@@ -24,6 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/ai/', include('ai_service.urls')),
     path('api/voice/', include('voice_service.urls')),
+    path('meeting/', include('meeting_service.urls')),
+    path('admin-config/', include('admin_config.urls')),
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
 ]
 

@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'users',
     'ai_service',
     'voice_service',
+    'meeting_service',
+    'admin_config',
 ]
 
 MIDDLEWARE = [
@@ -173,6 +175,17 @@ CELERY_TIMEZONE = TIME_ZONE
 # Google Cloud Configuration
 GOOGLE_CLOUD_PROJECT = config('GOOGLE_CLOUD_PROJECT', default='')
 GOOGLE_APPLICATION_CREDENTIALS = config('GOOGLE_APPLICATION_CREDENTIALS', default='')
+
+# Google Meet Configuration
+GOOGLE_MEET_CLIENT_ID = config('GOOGLE_MEET_CLIENT_ID', default='')
+GOOGLE_MEET_CLIENT_SECRET = config('GOOGLE_MEET_CLIENT_SECRET', default='')
+GOOGLE_MEET_REDIRECT_URI = config('GOOGLE_MEET_REDIRECT_URI', default='http://localhost:8000/meeting/oauth/callback/')
+GOOGLE_MEET_SCOPES = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/meetings.space.created',
+    'https://www.googleapis.com/auth/meetings.space.readonly'
+]
 
 # Channels Configuration
 ASGI_APPLICATION = 'nia_sales_assistant.asgi.application'
