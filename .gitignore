@@ -77,3 +77,25 @@ logs/
 *.temp
 temp/
 tmp/
+
+# Backup files
+*.backup
+*.bak
+*.orig
+*~
+
+# Debug and test files
+debug_*.py
+test_*.py.bak
+quick_test*.py
+simple_test*.py
+
+# Cleanup artifacts
+cleanup_*.json
+validation_test.py
+*.test.env
+
+# Development artifacts
+.env.test
+.env.original
+.env.backup

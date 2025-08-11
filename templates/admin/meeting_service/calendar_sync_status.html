@@ -1,0 +1,183 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}Calendar Integration Status{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.calendar-status-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.status-connected {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.status-disconnected {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.status-warning {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.connect-button {
+    background: #007cba;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 5px 0;
+}
+
+.connect-button:hover {
+    background: #005a87;
+    color: white;
+}
+
+.meeting-list {
+    margin-top: 20px;
+}
+
+.meeting-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meeting-info {
+    flex-grow: 1;
+}
+
+.meeting-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-scheduled { background: #e3f2fd; color: #1976d2; }
+.status-completed { background: #e8f5e8; color: #388e3c; }
+.status-cancelled { background: #ffebee; color: #d32f2f; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-main">
+    <h1>Calendar Integration Status</h1>
+    
+    <div class="calendar-status-card">
+        <h2>Google Calendar</h2>
+        {% if user_sync_status.google_calendar.connected %}
+            <p class="status-connected">✓ Connected</p>
+            <p><strong>Last Sync:</strong> {{ user_sync_status.google_calendar.last_sync|date:"Y-m-d H:i:s" }}</p>
+        {% else %}
+            <p class="status-disconnected">✗ Not Connected</p>
+            {% if user_sync_status.google_calendar.error %}
+                <p class="status-warning">Error: {{ user_sync_status.google_calendar.error }}</p>
+            {% endif %}
+            <a href="{% url 'admin:connect_google_calendar' %}" class="connect-button">
+                Connect Google Calendar
+            </a>
+        {% endif %}
+    </div>
+    
+    <div class="calendar-status-card">
+        <h2>Outlook Calendar</h2>
+        {% if user_sync_status.outlook_calendar.connected %}
+            <p class="status-connected">✓ Connected</p>
+            <p><strong>Last Sync:</strong> {{ user_sync_status.outlook_calendar.last_sync|date:"Y-m-d H:i:s" }}</p>
+        {% else %}
+            <p class="status-disconnected">✗ Not Connected</p>
+            {% if user_sync_status.outlook_calendar.error %}
+                <p class="status-warning">Error: {{ user_sync_status.outlook_calendar.error }}</p>
+            {% endif %}
+            <a href="{% url 'admin:connect_outlook_calendar' %}" class="connect-button">
+                Connect Outlook Calendar
+            </a>
+        {% endif %}
+    </div>
+    
+    <div class="calendar-status-card">
+        <h2>Integration Features</h2>
+        <ul>
+            <li>
+                <strong>Automatic Meeting Scheduling:</strong> 
+                {% if has_google_auth or has_outlook_auth %}
+                    <span class="status-connected">Available</span>
+                {% else %}
+                    <span class="status-disconnected">Requires calendar connection</span>
+                {% endif %}
+            </li>
+            <li>
+                <strong>Conflict Detection:</strong> 
+                {% if has_google_auth or has_outlook_auth %}
+                    <span class="status-connected">Available</span>
+                {% else %}
+                    <span class="status-disconnected">Requires calendar connection</span>
+                {% endif %}
+            </li>
+            <li>
+                <strong>Meeting Reminders:</strong> 
+                {% if has_google_auth or has_outlook_auth %}
+                    <span class="status-connected">Available</span>
+                {% else %}
+                    <span class="status-disconnected">Requires calendar connection</span>
+                {% endif %}
+            </li>
+        </ul>
+    </div>
+    
+    {% if recent_meetings %}
+    <div class="calendar-status-card">
+        <h2>Recent Meetings</h2>
+        <div class="meeting-list">
+            {% for meeting in recent_meetings %}
+            <div class="meeting-item">
+                <div class="meeting-info">
+                    <strong>{{ meeting.title }}</strong><br>
+                    <small>{{ meeting.lead.company_name }} - {{ meeting.scheduled_at|date:"Y-m-d H:i" }}</small>
+                </div>
+                <div>
+                    <span class="meeting-status status-{{ meeting.status }}">
+                        {{ meeting.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="calendar-status-card">
+        <h2>Quick Actions</h2>
+        <p>
+            <a href="{% url 'admin:find_available_slots' %}" class="connect-button">
+                Find Available Time Slots
+            </a>
+            <a href="{% url 'admin:meeting_service_meeting_changelist' %}" class="connect-button">
+                Manage Meetings
+            </a>
+        </p>
+    </div>
+</div>
+
+<script>
+// Auto-refresh sync status every 30 seconds
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

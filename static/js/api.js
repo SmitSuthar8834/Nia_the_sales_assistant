@@ -208,11 +208,8 @@ class APIService {
             body: JSON.stringify(opportunityData)
         });
     }
-}
 
-// Create global API service instance
-window.apiService = new APIService();    // E
-nhanced Lead Management APIs
+    // Enhanced Lead Management APIs
     async searchLeads(query, filters = {}) {
         const params = new URLSearchParams({
             search: query,
@@ -259,8 +256,8 @@ nhanced Lead Management APIs
         }
 
         const eventSource = new EventSource(`${this.baseURL}/leads/updates/`);
-        
-        eventSource.onmessage = function(event) {
+
+        eventSource.onmessage = function (event) {
             try {
                 const data = JSON.parse(event.data);
                 callback(data);
@@ -269,7 +266,7 @@ nhanced Lead Management APIs
             }
         };
 
-        eventSource.onerror = function(error) {
+        eventSource.onerror = function (error) {
             console.error('SSE connection error:', error);
         };
 
@@ -280,15 +277,15 @@ nhanced Lead Management APIs
     setupWebSocketUpdates(callback) {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/leads/`;
-        
+
         try {
             const socket = new WebSocket(wsUrl);
-            
-            socket.onopen = function(event) {
+
+            socket.onopen = function (event) {
                 console.log('WebSocket connection established');
             };
-            
-            socket.onmessage = function(event) {
+
+            socket.onmessage = function (event) {
                 try {
                     const data = JSON.parse(event.data);
                     callback(data);
@@ -296,12 +293,12 @@ nhanced Lead Management APIs
                     console.error('Error parsing WebSocket data:', error);
                 }
             };
-            
-            socket.onerror = function(error) {
+
+            socket.onerror = function (error) {
                 console.error('WebSocket error:', error);
             };
-            
-            socket.onclose = function(event) {
+
+            socket.onclose = function (event) {
                 console.log('WebSocket connection closed');
                 // Attempt to reconnect after 5 seconds
                 setTimeout(() => {
@@ -309,7 +306,7 @@ nhanced Lead Management APIs
                     this.setupWebSocketUpdates(callback);
                 }, 5000);
             };
-            
+
             return socket;
         } catch (error) {
             console.error('Error setting up WebSocket:', error);
@@ -390,3 +387,6 @@ nhanced Lead Management APIs
         return this.request(`/leads/${leadId}/crm-sync-status/`);
     }
 }
+
+// Create global API service instance
+window.apiService = new APIService();

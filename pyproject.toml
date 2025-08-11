@@ -1,0 +1,151 @@
+# NIA Sales Assistant - Python Project Configuration
+# This file contains configuration for Python development tools
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nia-sales-assistant"
+version = "1.0.0"
+description = "AI-powered sales assistant with voice processing and meeting management"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "NIA Development Team"}
+]
+keywords = ["ai", "sales", "assistant", "voice", "meetings"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Intended Audience :: Business",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Code formatting with Black
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # Exclude migrations
+  migrations/
+  # Exclude static files
+  | static/
+  | staticfiles/
+  # Exclude virtual environments
+  | venv/
+  | env/
+)/
+'''
+
+# Import sorting with isort
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_django = "django"
+known_first_party = ["users", "ai_service", "voice_service", "meeting_service", "admin_config"]
+sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip_glob = ["*/migrations/*", "*/static/*", "*/staticfiles/*"]
+
+# Linting with flake8 (configuration for flake8 tools)
+[tool.flake8]
+max-line-length = 88
+extend-ignore = [
+    "E203",  # whitespace before ':'
+    "E501",  # line too long (handled by black)
+    "W503",  # line break before binary operator
+]
+exclude = [
+    "migrations",
+    "static",
+    "staticfiles",
+    "venv",
+    "env",
+    "__pycache__",
+]
+
+# Testing with pytest
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "nia_sales_assistant.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings",
+]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = [
+    "users",
+    "ai_service", 
+    "voice_service",
+    "meeting_service",
+    "admin_config",
+    "nia_sales_assistant"
+]
+omit = [
+    "*/migrations/*",
+    "*/static/*",
+    "*/staticfiles/*",
+    "*/venv/*",
+    "*/env/*",
+    "manage.py",
+    "*/settings/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+precision = 2
+
+# MyPy type checking configuration
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+exclude = [
+    "migrations/",
+    "static/",
+    "staticfiles/",
+]
+
+# Django-specific mypy configuration
+[[tool.mypy.overrides]]
+module = "*.migrations.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "manage"
+ignore_errors = true

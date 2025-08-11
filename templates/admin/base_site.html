@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('NIA Sales Assistant Admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'css/nia-admin.css' %}">
+{% endblock %}
+
+{% load static %}
+
+{% block branding %}
+<div id="site-name" style="display: flex; align-items: center; padding: 10px 0;">
+    <img src="{% static 'images/nia-logo.png' %}" alt="NIA Logo" style="height: 40px; width: auto; margin-right: 15px; border-radius: 4px; background: white; padding: 2px;" onerror="this.style.display='none'">
+    <h1 style="margin: 0; font-size: 1.8em; font-weight: 300;">
+        <a href="{% url 'admin:index' %}" style="color: #fff; text-decoration: none;">
+            🤖 NIA Sales Assistant
+        </a>
+    </h1>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div style="float: right; margin-top: 10px;">
+    <a href="/admin/ai/dashboard/" style="color: #ffc; margin-right: 15px; text-decoration: none; font-weight: bold;">
+        🧠 AI Dashboard
+    </a>
+    <a href="/admin/ai_service/lead/" style="color: #ffc; margin-right: 15px; text-decoration: none;">
+        📋 Leads
+    </a>
+    <a href="/admin/admin_config/integrationconfiguration/" style="color: #ffc; margin-right: 15px; text-decoration: none;">
+        🔗 Integrations
+    </a>
+    <a href="/admin-config/" style="color: #ffc; text-decoration: none;">
+        ⚙️ Config Panel
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% load static %}
+
+<div class="conversation-widget" style="margin: 10px 0;">
+    <div class="conversation-header" style="background: #0073aa; color: white; padding: 10px; border-radius: 4px 4px 0 0;">
+        <h4 style="margin: 0;">💬 Conversation Management</h4>
+    </div>
+    
+    <div class="conversation-body" style="border: 1px solid #ddd; border-top: none; padding: 15px; background: #f8f9fa;">
+        {% if conversation_text %}
+            <div class="conversation-preview" style="margin-bottom: 15px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">📄 Current Conversation:</div>
+                <div style="background: white; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745; max-height: 200px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">{{ conversation_text|truncatechars:500 }}</div>
+                <div style="margin-top: 5px; font-size: 12px; color: #6c757d;">
+                    Length: {{ conversation_text|length }} characters
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="conversation-actions">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                {% if lead_id %}
+                    <a href="/admin-config/ai-dashboard/?lead_id={{ lead_id }}" 
+                       class="button" 
+                       style="background: #0073aa; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                        🧠 AI Analysis
+                    </a>
+                {% endif %}
+                
+                {% if conversation_text %}
+                    <a href="/admin-config/ai-dashboard/?conversation_text={{ conversation_text|urlencode }}" 
+                       class="button" 
+                       style="background: #17a2b8; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                        🔄 Re-analyze Conversation
+                    </a>
+                    
+                    <button onclick="copyConversation()" 
+                            class="button" 
+                            style="background: #6c757d; color: white; padding: 8px 12px; border: none; border-radius: 3px; cursor: pointer;">
+                        📋 Copy Text
+                    </button>
+                {% endif %}
+                
+                <a href="/admin/ai_service/conversationanalysis/" 
+                   class="button" 
+                   style="background: #28a745; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                    📊 View All Analyses
+                </a>
+            </div>
+        </div>
+        
+        {% if not conversation_text %}
+            <div style="text-align: center; padding: 20px; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 10px;">💬</div>
+                <div>No conversation recorded for this lead</div>
+                <div style="margin-top: 10px;">
+                    <a href="/admin-config/ai-dashboard/" 
+                       class="button" 
+                       style="background: #0073aa; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                        🚀 Analyze New Conversation
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function copyConversation() {
+    const conversationText = `{{ conversation_text|escapejs }}`;
+    navigator.clipboard.writeText(conversationText).then(function() {
+        alert('Conversation copied to clipboard!');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+    });
+}
+</script>

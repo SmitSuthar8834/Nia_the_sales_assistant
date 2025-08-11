@@ -1,0 +1,210 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'css/nia-admin.css' %}">
+<style>
+.login {
+    background: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    background: linear-gradient(135deg, var(--nia-navy) 0%, var(--nia-dark-navy) 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.login-header img {
+    height: 50px;
+    width: auto;
+    margin-bottom: 15px;
+    filter: brightness(0) invert(1);
+}
+
+.login-header h1 {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+.login-form {
+    padding: 40px 30px;
+}
+
+.login-form .form-row {
+    margin-bottom: 20px;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.login-form input[type="text"],
+.login-form input[type="password"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.login-form input[type="text"]:focus,
+.login-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--nia-teal);
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+}
+
+.login-form .submit-row {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.login-form input[type="submit"] {
+    background: linear-gradient(135deg, var(--nia-teal) 0%, var(--nia-navy) 100%);
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.login-form input[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+}
+
+.login-footer {
+    background: var(--nia-navy);
+    color: white;
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.errornote {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        margin: 20px;
+        max-width: none;
+    }
+    
+    .login-header {
+        padding: 20px;
+    }
+    
+    .login-form {
+        padding: 30px 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+
+{% block usertools %}{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-header">
+        <img src="{% static 'images/nia-logo.jpg' %}" alt="NIA Logo">
+        <h1>NIA Sales Assistant</h1>
+    </div>
+    
+    <form action="{{ app_path }}" method="post" id="login-form" class="login-form">{% csrf_token %}
+        {% if form.errors %}
+            <div class="errornote">
+                {% if form.errors.items|length == 1 %}
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                {% else %}
+                    {% trans 'Please correct the errors below.' %}
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <div class="form-row">
+            {{ form.username.label_tag }}
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div class="errornote">{{ form.username.errors.0 }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-row">
+            {{ form.password.label_tag }}
+            {{ form.password }}
+            {% if form.password.errors %}
+                <div class="errornote">{{ form.password.errors.0 }}</div>
+            {% endif %}
+        </div>
+        
+        {% url 'admin_password_reset' as password_reset_url %}
+        {% if password_reset_url %}
+            <div class="password-reset-link" style="text-align: center; margin: 20px 0;">
+                <a href="{{ password_reset_url }}" style="color: var(--nia-teal); text-decoration: none; font-size: 14px;">
+                    {% trans 'Forgotten your password or username?' %}
+                </a>
+            </div>
+        {% endif %}
+        
+        <div class="submit-row">
+            <input type="submit" value="{% trans 'Log in' %}">
+        </div>
+        
+        {% if user.is_authenticated %}
+            <div class="help" style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                {% blocktrans trimmed %}
+                    You are authenticated as {{ username }}, but are not authorized to access this page.
+                    Would you like to login to a different account?
+                {% endblocktrans %}
+            </div>
+        {% endif %}
+    </form>
+    
+    <div class="login-footer">
+        Powered by NIA Sales Assistant
+    </div>
+</div>
+{% endblock %}

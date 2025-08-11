@@ -1,0 +1,706 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .meeting-dashboard {
+        padding: 20px;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .dashboard-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.5em;
+        font-weight: 300;
+    }
+    
+    .dashboard-header p {
+        margin: 0;
+        font-size: 1.1em;
+        opacity: 0.9;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .metric-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .metric-number {
+        font-size: 2.8em;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+    
+    .metric-label {
+        color: #666;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    
+    .metric-change {
+        font-size: 0.8em;
+        font-weight: 500;
+    }
+    
+    .metric-positive { color: #28a745; }
+    .metric-negative { color: #dc3545; }
+    .metric-neutral { color: #6c757d; }
+    
+    .metric-primary { color: #007cba; }
+    .metric-success { color: #28a745; }
+    .metric-warning { color: #ffc107; }
+    .metric-danger { color: #dc3545; }
+    .metric-info { color: #17a2b8; }
+    
+    .dashboard-section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        background: #f8f9fa;
+        padding: 20px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        color: #333;
+        font-size: 1.4em;
+    }
+    
+    .section-content {
+        padding: 20px;
+    }
+    
+    .upcoming-meetings-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .meeting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s ease;
+    }
+    
+    .meeting-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .meeting-item:last-child {
+        border-bottom: none;
+    }
+    
+    .meeting-info h4 {
+        margin: 0 0 5px 0;
+        color: #333;
+    }
+    
+    .meeting-info p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .meeting-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-scheduled { background: #e3f2fd; color: #1976d2; }
+    .status-in-progress { background: #e8f5e8; color: #388e3c; }
+    .status-completed { background: #f3e5f5; color: #7b1fa2; }
+    .status-cancelled { background: #ffebee; color: #d32f2f; }
+    
+    .preparation-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .prep-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    
+    .prep-complete { background: #28a745; }
+    .prep-partial { background: #ffc107; }
+    .prep-pending { background: #dc3545; }
+    
+    .chart-container {
+        height: 300px;
+        margin: 20px 0;
+    }
+    
+    .performance-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .performance-table th,
+    .performance-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .performance-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .performance-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .effectiveness-bar {
+        width: 100px;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .effectiveness-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .refresh-btn {
+        background: #007cba;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+    
+    .refresh-btn:hover {
+        background: #005a87;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    
+    .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+    }
+</style>
+{% endblock %}
+
+{% block title %}Meeting Dashboard - {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block content_title %}
+<h1>📊 Meeting Analytics Dashboard</h1>
+{% endblock %}
+
+{% block content %}
+<div class="meeting-dashboard">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1>📅 Meeting Management Dashboard</h1>
+        <p>Comprehensive analytics and insights for meeting performance and AI effectiveness</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-number metric-primary" id="total-meetings">-</div>
+            <div class="metric-label">Total Meetings</div>
+            <div class="metric-change" id="meetings-change">-</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-number metric-success" id="conversion-rate">-</div>
+            <div class="metric-label">Conversion Rate</div>
+            <div class="metric-change" id="conversion-change">-</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-number metric-warning" id="upcoming-meetings">-</div>
+            <div class="metric-label">Upcoming Meetings</div>
+            <div class="metric-change" id="upcoming-change">-</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-number metric-info" id="avg-duration">-</div>
+            <div class="metric-label">Avg Duration (min)</div>
+            <div class="metric-change" id="duration-change">-</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-number metric-success" id="ai-effectiveness">-</div>
+            <div class="metric-label">AI Effectiveness</div>
+            <div class="metric-change" id="ai-change">-</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-number metric-primary" id="preparation-score">-</div>
+            <div class="metric-label">Preparation Score</div>
+            <div class="metric-change" id="prep-change">-</div>
+        </div>
+    </div>
+
+    <!-- Upcoming Meetings Section -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2>📅 Upcoming Meetings & Preparation Status</h2>
+            <button class="refresh-btn" onclick="refreshUpcomingMeetings()">🔄 Refresh</button>
+        </div>
+        <div class="section-content">
+            <div id="upcoming-meetings-content" class="loading">
+                Loading upcoming meetings...
+            </div>
+        </div>
+    </div>
+
+    <!-- Meeting Performance Metrics -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2>📈 Meeting Performance Metrics</h2>
+            <button class="refresh-btn" onclick="refreshPerformanceMetrics()">🔄 Refresh</button>
+        </div>
+        <div class="section-content">
+            <div id="performance-chart" class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+            <div id="performance-metrics-content" class="loading">
+                Loading performance metrics...
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Recommendation Effectiveness -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2>🤖 AI Recommendation Effectiveness</h2>
+            <button class="refresh-btn" onclick="refreshAIEffectiveness()">🔄 Refresh</button>
+        </div>
+        <div class="section-content">
+            <div id="ai-effectiveness-content" class="loading">
+                Loading AI effectiveness data...
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversion Analytics -->
+    <div class="dashboard-section">
+        <div class="section-header">
+            <h2>🎯 Conversion Analytics</h2>
+            <button class="refresh-btn" onclick="refreshConversionAnalytics()">🔄 Refresh</button>
+        </div>
+        <div class="section-content">
+            <div id="conversion-chart" class="chart-container">
+                <canvas id="conversionChart"></canvas>
+            </div>
+            <div id="conversion-analytics-content" class="loading">
+                Loading conversion analytics...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let performanceChart = null;
+let conversionChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    initializeCharts();
+});
+
+async function loadDashboardData() {
+    try {
+        await Promise.all([
+            loadKeyMetrics(),
+            loadUpcomingMeetings(),
+            loadPerformanceMetrics(),
+            loadAIEffectiveness(),
+            loadConversionAnalytics()
+        ]);
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+    }
+}
+
+async function loadKeyMetrics() {
+    try {
+        const response = await fetch('/meeting-service/admin/dashboard/metrics/');
+        const data = await response.json();
+        
+        document.getElementById('total-meetings').textContent = data.total_meetings || '0';
+        document.getElementById('conversion-rate').textContent = (data.conversion_rate || 0) + '%';
+        document.getElementById('upcoming-meetings').textContent = data.upcoming_meetings || '0';
+        document.getElementById('avg-duration').textContent = data.avg_duration || '0';
+        document.getElementById('ai-effectiveness').textContent = (data.ai_effectiveness || 0) + '%';
+        document.getElementById('preparation-score').textContent = (data.preparation_score || 0) + '%';
+        
+        // Update change indicators
+        updateChangeIndicator('meetings-change', data.meetings_change);
+        updateChangeIndicator('conversion-change', data.conversion_change);
+        updateChangeIndicator('upcoming-change', data.upcoming_change);
+        updateChangeIndicator('duration-change', data.duration_change);
+        updateChangeIndicator('ai-change', data.ai_change);
+        updateChangeIndicator('prep-change', data.prep_change);
+        
+    } catch (error) {
+        console.error('Error loading key metrics:', error);
+    }
+}
+
+async function loadUpcomingMeetings() {
+    try {
+        const response = await fetch('/meeting-service/admin/dashboard/upcoming/');
+        const data = await response.json();
+        
+        const container = document.getElementById('upcoming-meetings-content');
+        
+        if (data.meetings && data.meetings.length > 0) {
+            container.innerHTML = data.meetings.map(meeting => `
+                <div class="meeting-item">
+                    <div class="meeting-info">
+                        <h4>${meeting.title}</h4>
+                        <p>📅 ${meeting.scheduled_at} | 🏢 ${meeting.company_name}</p>
+                        <p>📋 ${meeting.meeting_type} | ⏱️ ${meeting.duration_minutes} min</p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: end; gap: 8px;">
+                        <span class="meeting-status status-${meeting.status}">${meeting.status_display}</span>
+                        <div class="preparation-status">
+                            <span class="prep-indicator prep-${meeting.preparation_status}"></span>
+                            <span>${meeting.preparation_status_display}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No upcoming meetings found.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading upcoming meetings:', error);
+        document.getElementById('upcoming-meetings-content').innerHTML = 
+            '<div class="error">Error loading upcoming meetings. Please try again.</div>';
+    }
+}
+
+async function loadPerformanceMetrics() {
+    try {
+        const response = await fetch('/meeting-service/admin/dashboard/performance/');
+        const data = await response.json();
+        
+        const container = document.getElementById('performance-metrics-content');
+        
+        if (data.metrics && data.metrics.length > 0) {
+            container.innerHTML = `
+                <table class="performance-table">
+                    <thead>
+                        <tr>
+                            <th>Meeting Type</th>
+                            <th>Total Meetings</th>
+                            <th>Avg Duration</th>
+                            <th>Conversion Rate</th>
+                            <th>Success Rate</th>
+                            <th>Effectiveness</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.metrics.map(metric => `
+                            <tr>
+                                <td>${metric.meeting_type}</td>
+                                <td>${metric.total_meetings}</td>
+                                <td>${metric.avg_duration} min</td>
+                                <td>${metric.conversion_rate}%</td>
+                                <td>${metric.success_rate}%</td>
+                                <td>
+                                    <div class="effectiveness-bar">
+                                        <div class="effectiveness-fill" style="width: ${metric.effectiveness}%; background: ${getEffectivenessColor(metric.effectiveness)};"></div>
+                                    </div>
+                                    ${metric.effectiveness}%
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No performance data available.</p>';
+        }
+        
+        // Update performance chart
+        if (performanceChart && data.chart_data) {
+            updatePerformanceChart(data.chart_data);
+        }
+        
+    } catch (error) {
+        console.error('Error loading performance metrics:', error);
+        document.getElementById('performance-metrics-content').innerHTML = 
+            '<div class="error">Error loading performance metrics. Please try again.</div>';
+    }
+}
+
+async function loadAIEffectiveness() {
+    try {
+        const response = await fetch('/meeting-service/admin/dashboard/ai-effectiveness/');
+        const data = await response.json();
+        
+        const container = document.getElementById('ai-effectiveness-content');
+        
+        if (data.effectiveness_data && data.effectiveness_data.length > 0) {
+            container.innerHTML = `
+                <table class="performance-table">
+                    <thead>
+                        <tr>
+                            <th>AI Feature</th>
+                            <th>Usage Count</th>
+                            <th>Success Rate</th>
+                            <th>Avg Effectiveness</th>
+                            <th>Impact on Conversion</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.effectiveness_data.map(item => `
+                            <tr>
+                                <td>${item.feature_name}</td>
+                                <td>${item.usage_count}</td>
+                                <td>${item.success_rate}%</td>
+                                <td>
+                                    <div class="effectiveness-bar">
+                                        <div class="effectiveness-fill" style="width: ${item.effectiveness}%; background: ${getEffectivenessColor(item.effectiveness)};"></div>
+                                    </div>
+                                    ${item.effectiveness}%
+                                </td>
+                                <td>${item.conversion_impact}%</td>
+                                <td>
+                                    <span class="metric-${item.trend_direction}">${item.trend_indicator}</span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No AI effectiveness data available.</p>';
+        }
+        
+    } catch (error) {
+        console.error('Error loading AI effectiveness:', error);
+        document.getElementById('ai-effectiveness-content').innerHTML = 
+            '<div class="error">Error loading AI effectiveness data. Please try again.</div>';
+    }
+}
+
+async function loadConversionAnalytics() {
+    try {
+        const response = await fetch('/meeting-service/admin/dashboard/conversion/');
+        const data = await response.json();
+        
+        const container = document.getElementById('conversion-analytics-content');
+        
+        if (data.conversion_data) {
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h4>Conversion Funnel</h4>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            ${data.conversion_data.funnel.map(stage => `
+                                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #ddd;">
+                                    <span>${stage.stage}</span>
+                                    <span><strong>${stage.count}</strong> (${stage.percentage}%)</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <h4>Top Converting Meeting Types</h4>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            ${data.conversion_data.top_types.map(type => `
+                                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #ddd;">
+                                    <span>${type.meeting_type}</span>
+                                    <span><strong>${type.conversion_rate}%</strong></span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No conversion data available.</p>';
+        }
+        
+        // Update conversion chart
+        if (conversionChart && data.chart_data) {
+            updateConversionChart(data.chart_data);
+        }
+        
+    } catch (error) {
+        console.error('Error loading conversion analytics:', error);
+        document.getElementById('conversion-analytics-content').innerHTML = 
+            '<div class="error">Error loading conversion analytics. Please try again.</div>';
+    }
+}
+
+function initializeCharts() {
+    // Initialize Performance Chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(performanceCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Meeting Success Rate',
+                data: [],
+                borderColor: '#007cba',
+                backgroundColor: 'rgba(0, 124, 186, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+    
+    // Initialize Conversion Chart
+    const conversionCtx = document.getElementById('conversionChart').getContext('2d');
+    conversionChart = new Chart(conversionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#007cba',
+                    '#28a745',
+                    '#ffc107',
+                    '#dc3545',
+                    '#6f42c1'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function updatePerformanceChart(chartData) {
+    if (performanceChart && chartData) {
+        performanceChart.data.labels = chartData.labels;
+        performanceChart.data.datasets[0].data = chartData.data;
+        performanceChart.update();
+    }
+}
+
+function updateConversionChart(chartData) {
+    if (conversionChart && chartData) {
+        conversionChart.data.labels = chartData.labels;
+        conversionChart.data.datasets[0].data = chartData.data;
+        conversionChart.update();
+    }
+}
+
+function updateChangeIndicator(elementId, change) {
+    const element = document.getElementById(elementId);
+    if (change > 0) {
+        element.textContent = `↗️ +${change}%`;
+        element.className = 'metric-change metric-positive';
+    } else if (change < 0) {
+        element.textContent = `↘️ ${change}%`;
+        element.className = 'metric-change metric-negative';
+    } else {
+        element.textContent = '➡️ 0%';
+        element.className = 'metric-change metric-neutral';
+    }
+}
+
+function getEffectivenessColor(effectiveness) {
+    if (effectiveness >= 80) return '#28a745';
+    if (effectiveness >= 60) return '#ffc107';
+    return '#dc3545';
+}
+
+// Refresh functions
+async function refreshUpcomingMeetings() {
+    document.getElementById('upcoming-meetings-content').innerHTML = '<div class="loading">Refreshing...</div>';
+    await loadUpcomingMeetings();
+}
+
+async function refreshPerformanceMetrics() {
+    document.getElementById('performance-metrics-content').innerHTML = '<div class="loading">Refreshing...</div>';
+    await loadPerformanceMetrics();
+}
+
+async function refreshAIEffectiveness() {
+    document.getElementById('ai-effectiveness-content').innerHTML = '<div class="loading">Refreshing...</div>';
+    await loadAIEffectiveness();
+}
+
+async function refreshConversionAnalytics() {
+    document.getElementById('conversion-analytics-content').innerHTML = '<div class="loading">Refreshing...</div>';
+    await loadConversionAnalytics();
+}
+</script>
+{% endblock %}

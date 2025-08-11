@@ -17,10 +17,9 @@ SALES_CONTEXT = {
             "Real-time voice processing",
             "Intelligent lead scoring",
             "Industry-specific insights",
-            "Automated workflow recommendations"
-        ]
+            "Automated workflow recommendations",
+        ],
     },
-    
     "sales_methodology": {
         "primary_approach": "Consultative Selling",
         "framework": "BANT (Budget, Authority, Need, Timeline)",
@@ -28,7 +27,7 @@ SALES_CONTEXT = {
             "Budget availability and approval process",
             "Decision-making authority identification",
             "Pain points and business needs assessment",
-            "Implementation timeline and urgency"
+            "Implementation timeline and urgency",
         ],
         "sales_stages": [
             "Prospecting",
@@ -38,10 +37,9 @@ SALES_CONTEXT = {
             "Proposal",
             "Negotiation",
             "Closing",
-            "Implementation"
-        ]
+            "Implementation",
+        ],
     },
-    
     "lead_scoring_criteria": {
         "high_value_indicators": [
             "Clear budget allocation ($50K+)",
@@ -50,7 +48,7 @@ SALES_CONTEXT = {
             "Decision maker directly involved",
             "Previous solution evaluation experience",
             "Growing company (50+ employees)",
-            "Technology-forward industry"
+            "Technology-forward industry",
         ],
         "medium_value_indicators": [
             "Budget range mentioned but not confirmed",
@@ -58,7 +56,7 @@ SALES_CONTEXT = {
             "Some pain points identified",
             "Influencer involved in process",
             "Stable company size",
-            "Traditional industry with digital initiatives"
+            "Traditional industry with digital initiatives",
         ],
         "low_value_indicators": [
             "No budget mentioned or very limited",
@@ -66,10 +64,9 @@ SALES_CONTEXT = {
             "Vague or minimal pain points",
             "No decision-making authority",
             "Very small company (<10 employees)",
-            "Highly regulated or slow-moving industry"
-        ]
+            "Highly regulated or slow-moving industry",
+        ],
     },
-    
     "industry_insights": {
         "technology": {
             "common_pain_points": [
@@ -77,7 +74,7 @@ SALES_CONTEXT = {
                 "Integration complexity",
                 "Scalability challenges",
                 "Developer productivity",
-                "Security concerns"
+                "Security concerns",
             ],
             "decision_makers": ["CTO", "VP Engineering", "Head of Product"],
             "sales_approach": "Technical demonstration with deep-dive capabilities",
@@ -86,8 +83,8 @@ SALES_CONTEXT = {
                 "Technical superiority and innovation",
                 "Integration ease and API capabilities",
                 "Scalability and performance",
-                "Developer experience and productivity"
-            ]
+                "Developer experience and productivity",
+            ],
         },
         "financial_services": {
             "common_pain_points": [
@@ -95,17 +92,22 @@ SALES_CONTEXT = {
                 "Data security and privacy",
                 "Legacy system integration",
                 "Customer experience improvement",
-                "Operational efficiency"
+                "Operational efficiency",
             ],
-            "decision_makers": ["CFO", "CRO", "Head of Operations", "Compliance Officer"],
+            "decision_makers": [
+                "CFO",
+                "CRO",
+                "Head of Operations",
+                "Compliance Officer",
+            ],
             "sales_approach": "Compliance-focused with ROI emphasis",
             "typical_sales_cycle": "6-12 months",
             "key_messaging": [
                 "Regulatory compliance and security",
                 "Risk mitigation and audit trails",
                 "ROI and cost reduction",
-                "Customer satisfaction improvement"
-            ]
+                "Customer satisfaction improvement",
+            ],
         },
         "healthcare": {
             "common_pain_points": [
@@ -113,7 +115,7 @@ SALES_CONTEXT = {
                 "Workflow efficiency",
                 "Compliance with HIPAA/regulations",
                 "Cost reduction pressures",
-                "Staff productivity"
+                "Staff productivity",
             ],
             "decision_makers": ["CMO", "CIO", "Administrator", "Department Head"],
             "sales_approach": "Outcome-focused with compliance emphasis",
@@ -122,8 +124,8 @@ SALES_CONTEXT = {
                 "Patient outcome improvement",
                 "Compliance and security",
                 "Workflow optimization",
-                "Cost reduction and efficiency"
-            ]
+                "Cost reduction and efficiency",
+            ],
         },
         "manufacturing": {
             "common_pain_points": [
@@ -131,17 +133,22 @@ SALES_CONTEXT = {
                 "Quality control",
                 "Operational efficiency",
                 "Predictive maintenance",
-                "Inventory management"
+                "Inventory management",
             ],
-            "decision_makers": ["COO", "Plant Manager", "VP Operations", "Quality Manager"],
+            "decision_makers": [
+                "COO",
+                "Plant Manager",
+                "VP Operations",
+                "Quality Manager",
+            ],
             "sales_approach": "Efficiency and cost-savings focused",
             "typical_sales_cycle": "4-8 months",
             "key_messaging": [
                 "Operational efficiency gains",
                 "Cost reduction and waste elimination",
                 "Quality improvement",
-                "Predictive capabilities"
-            ]
+                "Predictive capabilities",
+            ],
         },
         "retail": {
             "common_pain_points": [
@@ -149,7 +156,7 @@ SALES_CONTEXT = {
                 "Inventory optimization",
                 "Sales forecasting",
                 "Omnichannel integration",
-                "Competitive pricing"
+                "Competitive pricing",
             ],
             "decision_makers": ["CMO", "VP Sales", "Merchandising Manager", "CTO"],
             "sales_approach": "Customer experience and revenue growth focused",
@@ -158,11 +165,10 @@ SALES_CONTEXT = {
                 "Customer experience enhancement",
                 "Revenue growth and conversion",
                 "Inventory optimization",
-                "Competitive advantage"
-            ]
-        }
+                "Competitive advantage",
+            ],
+        },
     },
-    
     "objection_handling": {
         "budget_concerns": {
             "strategies": [
@@ -170,14 +176,14 @@ SALES_CONTEXT = {
                 "Break down costs vs. current inefficiencies",
                 "Offer phased implementation approach",
                 "Provide financing or payment options",
-                "Show competitive cost analysis"
+                "Show competitive cost analysis",
             ],
             "responses": [
                 "Let's look at the cost of not solving this problem",
                 "What's the current cost of your existing process?",
                 "We can structure this to fit your budget cycle",
-                "Many clients see ROI within the first quarter"
-            ]
+                "Many clients see ROI within the first quarter",
+            ],
         },
         "timing_concerns": {
             "strategies": [
@@ -185,14 +191,14 @@ SALES_CONTEXT = {
                 "Show cost of delay",
                 "Offer pilot or proof of concept",
                 "Align with business cycles",
-                "Create compelling events"
+                "Create compelling events",
             ],
             "responses": [
                 "What happens if you wait another year?",
                 "We can start with a pilot to prove value",
                 "When does your current contract expire?",
-                "What's driving the need for change now?"
-            ]
+                "What's driving the need for change now?",
+            ],
         },
         "authority_concerns": {
             "strategies": [
@@ -200,14 +206,14 @@ SALES_CONTEXT = {
                 "Map decision-making process",
                 "Provide materials for internal selling",
                 "Offer to present to decision makers",
-                "Build champion relationships"
+                "Build champion relationships",
             ],
             "responses": [
                 "Who else would be involved in this decision?",
                 "What information would help you make the case internally?",
                 "I'd be happy to present to your team",
-                "What's your typical approval process?"
-            ]
+                "What's your typical approval process?",
+            ],
         },
         "competition_concerns": {
             "strategies": [
@@ -215,17 +221,16 @@ SALES_CONTEXT = {
                 "Understand competitor weaknesses",
                 "Provide comparison materials",
                 "Emphasize total value proposition",
-                "Share relevant case studies"
+                "Share relevant case studies",
             ],
             "responses": [
                 "What specific capabilities are most important to you?",
                 "How are you evaluating the different options?",
                 "Let me show you what makes us different",
-                "What concerns do you have about other solutions?"
-            ]
-        }
+                "What concerns do you have about other solutions?",
+            ],
+        },
     },
-    
     "recommendation_guidelines": {
         "next_steps": {
             "immediate_actions": [
@@ -233,22 +238,22 @@ SALES_CONTEXT = {
                 "Send relevant case studies or materials",
                 "Provide technical documentation",
                 "Arrange product demonstration",
-                "Connect with reference customers"
+                "Connect with reference customers",
             ],
             "short_term_actions": [
                 "Conduct needs assessment",
                 "Prepare custom proposal",
                 "Arrange stakeholder meetings",
                 "Provide pilot or trial access",
-                "Schedule technical deep-dive"
+                "Schedule technical deep-dive",
             ],
             "long_term_actions": [
                 "Develop implementation timeline",
                 "Prepare contract negotiations",
                 "Plan change management",
                 "Design training program",
-                "Establish success metrics"
-            ]
+                "Establish success metrics",
+            ],
         },
         "priority_matrix": {
             "high_priority": [
@@ -256,25 +261,24 @@ SALES_CONTEXT = {
                 "Budget confirmation",
                 "Timeline validation",
                 "Technical fit verification",
-                "Competitive differentiation"
+                "Competitive differentiation",
             ],
             "medium_priority": [
                 "Stakeholder mapping",
                 "Use case development",
                 "ROI calculation",
                 "Reference sharing",
-                "Pilot planning"
+                "Pilot planning",
             ],
             "low_priority": [
                 "General relationship building",
                 "Industry networking",
                 "Long-term nurturing",
                 "Educational content sharing",
-                "Market research sharing"
-            ]
-        }
+                "Market research sharing",
+            ],
+        },
     },
-    
     "confidence_scoring_rules": {
         "high_confidence_indicators": [
             "Complete lead data (8+ fields filled)",
@@ -283,7 +287,7 @@ SALES_CONTEXT = {
             "Urgent timeline (< 6 months)",
             "Multiple pain points identified",
             "Previous solution experience",
-            "Industry match with our strengths"
+            "Industry match with our strengths",
         ],
         "medium_confidence_indicators": [
             "Moderate lead data (5-7 fields filled)",
@@ -291,7 +295,7 @@ SALES_CONTEXT = {
             "Budget range discussed",
             "Timeline within 12 months",
             "Some pain points identified",
-            "General industry fit"
+            "General industry fit",
         ],
         "low_confidence_indicators": [
             "Limited lead data (< 5 fields filled)",
@@ -299,9 +303,9 @@ SALES_CONTEXT = {
             "No budget information",
             "No specific timeline",
             "Vague or no pain points",
-            "Poor industry fit"
-        ]
-    }
+            "Poor industry fit",
+        ],
+    },
 }
 
 # AI behavior guidelines
@@ -311,32 +315,29 @@ AI_GUIDELINES = {
         "confident": "Provide confident recommendations based on data",
         "helpful": "Focus on actionable, practical advice",
         "specific": "Give specific, measurable recommendations",
-        "empathetic": "Understand and acknowledge customer challenges"
+        "empathetic": "Understand and acknowledge customer challenges",
     },
-    
     "recommendation_principles": {
         "data_driven": "Base recommendations on available lead data",
         "prioritized": "Rank recommendations by impact and urgency",
         "actionable": "Provide clear, executable next steps",
         "measurable": "Include success metrics where possible",
         "realistic": "Consider resource constraints and timelines",
-        "personalized": "Tailor to specific industry and company size"
+        "personalized": "Tailor to specific industry and company size",
     },
-    
     "quality_standards": {
         "accuracy": "Ensure recommendations align with lead characteristics",
         "relevance": "Focus on industry-specific and role-appropriate advice",
         "completeness": "Provide comprehensive analysis when data allows",
         "consistency": "Maintain consistent scoring and recommendation logic",
-        "transparency": "Explain reasoning behind recommendations"
+        "transparency": "Explain reasoning behind recommendations",
     },
-    
     "error_handling": {
         "missing_data": "Acknowledge limitations and suggest data gathering",
         "low_confidence": "Provide general best practices with caveats",
         "conflicting_data": "Highlight inconsistencies and seek clarification",
-        "edge_cases": "Provide conservative recommendations with explanations"
-    }
+        "edge_cases": "Provide conservative recommendations with explanations",
+    },
 }
 
 # Prompt templates for consistent AI responses
@@ -360,7 +361,6 @@ PROMPT_TEMPLATES = {
     
     Provide specific, actionable insights based on the available data.
     """,
-    
     "sales_strategy": """
     You are an expert sales strategist. Create a tailored sales approach for this lead.
     
@@ -379,7 +379,6 @@ PROMPT_TEMPLATES = {
     
     Provide specific tactics and messaging for the recommended approach.
     """,
-    
     "industry_insights": """
     You are an industry expert and sales consultant. Provide industry-specific insights and best practices.
     
@@ -394,7 +393,6 @@ PROMPT_TEMPLATES = {
     Tailor your insights to the specific industry and company size.
     Provide actionable advice that can be immediately applied.
     """,
-    
     "recommendations": """
     You are an expert sales advisor. Generate comprehensive, actionable recommendations.
     
@@ -411,52 +409,57 @@ PROMPT_TEMPLATES = {
     - Resource requirements and effort level
     
     Prioritize recommendations based on impact and feasibility.
-    """
+    """,
 }
+
 
 def get_context_for_industry(industry: str) -> dict:
     """Get industry-specific context and guidelines"""
-    industry_key = industry.lower().replace(' ', '_').replace('-', '_')
-    
+    industry_key = industry.lower().replace(" ", "_").replace("-", "_")
+
     # Map common industry variations
     industry_mapping = {
-        'software': 'technology',
-        'tech': 'technology',
-        'it': 'technology',
-        'fintech': 'financial_services',
-        'banking': 'financial_services',
-        'insurance': 'financial_services',
-        'medical': 'healthcare',
-        'pharma': 'healthcare',
-        'pharmaceutical': 'healthcare',
-        'ecommerce': 'retail',
-        'e_commerce': 'retail',
-        'consumer': 'retail'
+        "software": "technology",
+        "tech": "technology",
+        "it": "technology",
+        "fintech": "financial_services",
+        "banking": "financial_services",
+        "insurance": "financial_services",
+        "medical": "healthcare",
+        "pharma": "healthcare",
+        "pharmaceutical": "healthcare",
+        "ecommerce": "retail",
+        "e_commerce": "retail",
+        "consumer": "retail",
     }
-    
+
     industry_key = industry_mapping.get(industry_key, industry_key)
-    
+
     return SALES_CONTEXT["industry_insights"].get(
-        industry_key, 
-        SALES_CONTEXT["industry_insights"]["technology"]  # Default fallback
+        industry_key,
+        SALES_CONTEXT["industry_insights"]["technology"],  # Default fallback
     )
+
 
 def get_confidence_guidelines() -> dict:
     """Get confidence scoring guidelines"""
     return SALES_CONTEXT["confidence_scoring_rules"]
 
+
 def get_objection_handling_strategies() -> dict:
     """Get objection handling strategies"""
     return SALES_CONTEXT["objection_handling"]
+
 
 def get_recommendation_guidelines() -> dict:
     """Get recommendation guidelines"""
     return SALES_CONTEXT["recommendation_guidelines"]
 
+
 def build_context_prompt(prompt_type: str, additional_context: dict = None) -> str:
     """Build a context-aware prompt for AI interactions"""
     base_prompt = PROMPT_TEMPLATES.get(prompt_type, "")
-    
+
     # Add company context
     company_context = f"""
     
@@ -470,7 +473,7 @@ def build_context_prompt(prompt_type: str, additional_context: dict = None) -> s
     Key differentiators:
     {chr(10).join(f"- {advantage}" for advantage in SALES_CONTEXT['company_profile']['competitive_advantages'])}
     """
-    
+
     # Add methodology context
     methodology_context = f"""
     
@@ -481,7 +484,7 @@ def build_context_prompt(prompt_type: str, additional_context: dict = None) -> s
     Key qualification criteria:
     {chr(10).join(f"- {criteria}" for criteria in SALES_CONTEXT['sales_methodology']['qualification_criteria'])}
     """
-    
+
     # Add behavioral guidelines
     behavior_context = f"""
     
@@ -490,10 +493,10 @@ def build_context_prompt(prompt_type: str, additional_context: dict = None) -> s
     - Approach: {AI_GUIDELINES['recommendation_principles']['data_driven']}, {AI_GUIDELINES['recommendation_principles']['actionable']}
     - Quality: {AI_GUIDELINES['quality_standards']['accuracy']}, {AI_GUIDELINES['quality_standards']['relevance']}
     """
-    
+
     # Combine all context
     full_prompt = base_prompt + company_context + methodology_context + behavior_context
-    
+
     # Add any additional context
     if additional_context:
         additional_context_str = f"""
@@ -502,5 +505,5 @@ def build_context_prompt(prompt_type: str, additional_context: dict = None) -> s
         {chr(10).join(f"- {key}: {value}" for key, value in additional_context.items())}
         """
         full_prompt += additional_context_str
-    
+
     return full_prompt

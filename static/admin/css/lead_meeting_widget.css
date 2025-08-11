@@ -1,0 +1,391 @@
+/* Lead Meeting Widget Styles */
+
+.meeting-scheduling-widget {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    margin: 10px 0;
+}
+
+.meeting-scheduling-widget h3 {
+    margin-top: 0;
+    color: #007cba;
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+}
+
+.meeting-scheduling-widget h4 {
+    color: #495057;
+    margin-bottom: 10px;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.meeting-widget-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.meeting-widget-card {
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.meeting-widget-card.ai-recommendations {
+    background: #e8f4fd;
+    border: 1px solid #b3d9ff;
+}
+
+.meeting-widget-card p {
+    margin: 8px 0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.meeting-widget-card p:first-child {
+    margin-top: 0;
+}
+
+.meeting-widget-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* Meeting list in widget */
+.meeting-list-item {
+    padding: 12px;
+    border-bottom: 1px solid #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meeting-list-item:last-child {
+    border-bottom: none;
+}
+
+.meeting-list-item .meeting-info {
+    flex: 1;
+}
+
+.meeting-list-item .meeting-info strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.meeting-list-item .meeting-meta {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.meeting-list-item .meeting-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Status badges */
+.status-scheduled { color: #007cba; }
+.status-in-progress { color: #28a745; }
+.status-completed { color: #6c757d; }
+.status-cancelled { color: #dc3545; }
+
+/* Urgency indicators */
+.urgency-high { color: #dc3545; font-weight: bold; }
+.urgency-medium { color: #ffc107; font-weight: bold; }
+.urgency-low { color: #28a745; font-weight: bold; }
+
+/* Modal styles */
+.meeting-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.meeting-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: none;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.meeting-modal h2 {
+    margin: 0;
+    color: #007cba;
+    font-size: 20px;
+}
+
+.close-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: #000;
+    text-decoration: none;
+}
+
+/* Form styles in modal */
+.meeting-modal form {
+    display: grid;
+    gap: 15px;
+}
+
+.meeting-modal label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #495057;
+    font-size: 14px;
+}
+
+.meeting-modal input,
+.meeting-modal select,
+.meeting-modal textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.meeting-modal input:focus,
+.meeting-modal select:focus,
+.meeting-modal textarea:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.25);
+}
+
+.meeting-modal textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.meeting-modal .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.meeting-modal .form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.meeting-modal button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.meeting-modal button[type="submit"] {
+    background: #007cba;
+    color: white;
+}
+
+.meeting-modal button[type="submit"]:hover {
+    background: #005a8b;
+}
+
+.meeting-modal button.cancel-meeting {
+    background: #6c757d;
+    color: white;
+}
+
+.meeting-modal button.cancel-meeting:hover {
+    background: #545b62;
+}
+
+/* Widget action buttons */
+.meeting-widget-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.meeting-widget-actions .button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+    font-family: inherit;
+}
+
+.meeting-widget-actions .button:hover {
+    opacity: 0.9;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .meeting-widget-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .meeting-modal-content {
+        width: 95%;
+        margin: 2% auto;
+        padding: 15px;
+    }
+    
+    .meeting-modal .form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .meeting-modal .form-actions {
+        flex-direction: column;
+    }
+    
+    .meeting-widget-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .meeting-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .meeting-list-item .meeting-actions {
+        align-self: flex-end;
+    }
+}
+
+/* Empty state styling */
+.meeting-empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+/* Loading states */
+.meeting-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.meeting-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Integration with Django admin */
+.module.aligned .form-row .field-meeting_scheduling_widget {
+    margin-left: 0;
+}
+
+.module.aligned .form-row .field-meeting_scheduling_widget .readonly {
+    margin-left: 0;
+    padding: 0;
+}
+
+/* Button consistency with Django admin */
+.meeting-scheduling-widget .button,
+.meeting-modal .button {
+    font-family: "Roboto","Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+    font-weight: normal;
+    font-size: 13px;
+    text-align: center;
+    vertical-align: middle;
+    background: #417690;
+    border: 1px solid #417690;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    padding: 10px 15px;
+}
+
+.meeting-scheduling-widget .button:hover,
+.meeting-modal .button:hover {
+    background: #205067;
+    border-color: #205067;
+}
+
+/* Override for specific button colors */
+.meeting-scheduling-widget .button.primary {
+    background: #007cba;
+    border-color: #007cba;
+}
+
+.meeting-scheduling-widget .button.primary:hover {
+    background: #005a8b;
+    border-color: #005a8b;
+}
+
+.meeting-scheduling-widget .button.success {
+    background: #28a745;
+    border-color: #28a745;
+}
+
+.meeting-scheduling-widget .button.success:hover {
+    background: #1e7e34;
+    border-color: #1e7e34;
+}
+
+.meeting-scheduling-widget .button.info {
+    background: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.meeting-scheduling-widget .button.info:hover {
+    background: #117a8b;
+    border-color: #117a8b;
+}

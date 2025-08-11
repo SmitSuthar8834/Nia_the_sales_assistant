@@ -1,62 +1,512 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from . import views
+
+from . import calendar_views, dashboard_views, views
 
 # Create router for ViewSets
 router = DefaultRouter()
-router.register(r'meetings', views.MeetingSessionViewSet, basename='meeting')
-router.register(r'participants', views.MeetingParticipantViewSet, basename='participant')
-router.register(r'status-updates', views.MeetingStatusUpdateViewSet, basename='status-update')
+router.register(r"meetings", views.MeetingSessionViewSet, basename="meeting")
+router.register(
+    r"participants", views.MeetingParticipantViewSet, basename="participant"
+)
+router.register(
+    r"status-updates", views.MeetingStatusUpdateViewSet, basename="status-update"
+)
 
-app_name = 'meeting_service'
+app_name = "meeting_service"
 
 urlpatterns = [
     # API endpoints
-    path('api/', include(router.urls)),
-    
+    path("api/", include(router.urls)),
     # Google OAuth endpoints
-    path('oauth/google/initiate/', views.google_oauth_initiate, name='google_oauth_initiate'),
-    path('oauth/google/callback/', views.google_oauth_callback, name='google_oauth_callback'),
-    path('oauth/google/status/', views.google_auth_status, name='google_auth_status'),
-    
+    path(
+        "oauth/google/initiate/",
+        views.google_oauth_initiate,
+        name="google_oauth_initiate",
+    ),
+    path(
+        "oauth/google/callback/",
+        views.google_oauth_callback,
+        name="google_oauth_callback",
+    ),
+    path("oauth/google/status/", views.google_auth_status, name="google_auth_status"),
     # Microsoft Teams OAuth endpoints
-    path('oauth/teams/initiate/', views.teams_oauth_initiate, name='teams_oauth_initiate'),
-    path('oauth/teams/callback/', views.teams_oauth_callback, name='teams_oauth_callback'),
-    path('oauth/teams/status/', views.teams_auth_status, name='teams_auth_status'),
-    
+    path(
+        "oauth/teams/initiate/", views.teams_oauth_initiate, name="teams_oauth_initiate"
+    ),
+    path(
+        "oauth/teams/callback/", views.teams_oauth_callback, name="teams_oauth_callback"
+    ),
+    path("oauth/teams/status/", views.teams_auth_status, name="teams_auth_status"),
     # Teams meeting endpoints
-    path('api/teams/meetings/create/', views.create_teams_meeting, name='create_teams_meeting'),
-    path('api/teams/meetings/<str:meeting_id>/recordings/', views.get_meeting_recordings, name='get_meeting_recordings'),
-    path('api/teams/meetings/<str:meeting_id>/transcripts/', views.get_meeting_transcripts, name='get_meeting_transcripts'),
-    
+    path(
+        "api/teams/meetings/create/",
+        views.create_teams_meeting,
+        name="create_teams_meeting",
+    ),
+    path(
+        "api/teams/meetings/<str:meeting_id>/recordings/",
+        views.get_meeting_recordings,
+        name="get_meeting_recordings",
+    ),
+    path(
+        "api/teams/meetings/<str:meeting_id>/transcripts/",
+        views.get_meeting_transcripts,
+        name="get_meeting_transcripts",
+    ),
     # Teams organization endpoints
-    path('api/teams/teams/', views.get_user_teams, name='get_user_teams'),
-    path('api/teams/teams/<str:team_id>/channels/', views.get_team_channels, name='get_team_channels'),
-    path('api/teams/channels/message/', views.send_channel_message, name='send_channel_message'),
-    
+    path("api/teams/teams/", views.get_user_teams, name="get_user_teams"),
+    path(
+        "api/teams/teams/<str:team_id>/channels/",
+        views.get_team_channels,
+        name="get_team_channels",
+    ),
+    path(
+        "api/teams/channels/message/",
+        views.send_channel_message,
+        name="send_channel_message",
+    ),
     # Dashboard endpoints
-    path('api/dashboard/', views.meeting_dashboard, name='meeting_dashboard'),
-    path('api/teams/dashboard/', views.teams_meeting_dashboard, name='teams_meeting_dashboard'),
-    
+    path("api/dashboard/", views.meeting_dashboard, name="meeting_dashboard"),
+    path(
+        "api/teams/dashboard/",
+        views.teams_meeting_dashboard,
+        name="teams_meeting_dashboard",
+    ),
     # Unified meeting endpoints
-    path('api/unified/meetings/create/', views.create_unified_meeting, name='create_unified_meeting'),
-    path('api/unified/dashboard/', views.unified_meeting_dashboard, name='unified_meeting_dashboard'),
-    
+    path(
+        "api/unified/meetings/create/",
+        views.create_unified_meeting,
+        name="create_unified_meeting",
+    ),
+    path(
+        "api/unified/dashboard/",
+        views.unified_meeting_dashboard,
+        name="unified_meeting_dashboard",
+    ),
     # Intelligent meeting management endpoints
-    path('api/intelligent/availability/', views.analyze_user_availability, name='analyze_user_availability'),
-    path('api/intelligent/recommend-time/', views.recommend_meeting_time, name='recommend_meeting_time'),
-    path('api/intelligent/detect-conflicts/', views.detect_meeting_conflicts, name='detect_meeting_conflicts'),
-    path('api/intelligent/reschedule-options/', views.suggest_reschedule_options, name='suggest_reschedule_options'),
-    path('api/intelligent/schedule-followup/', views.schedule_post_meeting_followup, name='schedule_post_meeting_followup'),
-    path('api/intelligent/patterns/', views.analyze_meeting_patterns, name='analyze_meeting_patterns'),
-    path('api/intelligent/sync-status/', views.get_calendar_sync_status, name='get_calendar_sync_status'),
-    path('api/intelligent/dashboard/', views.intelligent_meeting_dashboard, name='intelligent_meeting_dashboard'),
-    
+    path(
+        "api/intelligent/availability/",
+        views.analyze_user_availability,
+        name="analyze_user_availability",
+    ),
+    path(
+        "api/intelligent/recommend-time/",
+        views.recommend_meeting_time,
+        name="recommend_meeting_time",
+    ),
+    path(
+        "api/intelligent/detect-conflicts/",
+        views.detect_meeting_conflicts,
+        name="detect_meeting_conflicts",
+    ),
+    path(
+        "api/intelligent/reschedule-options/",
+        views.suggest_reschedule_options,
+        name="suggest_reschedule_options",
+    ),
+    path(
+        "api/intelligent/schedule-followup/",
+        views.schedule_post_meeting_followup,
+        name="schedule_post_meeting_followup",
+    ),
+    path(
+        "api/intelligent/patterns/",
+        views.analyze_meeting_patterns,
+        name="analyze_meeting_patterns",
+    ),
+    path(
+        "api/intelligent/sync-status/",
+        views.get_calendar_sync_status,
+        name="get_calendar_sync_status",
+    ),
+    path(
+        "api/intelligent/dashboard/",
+        views.intelligent_meeting_dashboard,
+        name="intelligent_meeting_dashboard",
+    ),
+    # Live Meeting Support endpoints
+    path(
+        "api/live/start-session/",
+        views.start_live_meeting_session,
+        name="start_live_meeting_session",
+    ),
+    path(
+        "api/live/conversation-turn/",
+        views.process_conversation_turn,
+        name="process_conversation_turn",
+    ),
+    path(
+        "api/live/suggestions/",
+        views.get_real_time_suggestions,
+        name="get_real_time_suggestions",
+    ),
+    path(
+        "api/live/sentiment/",
+        views.analyze_conversation_sentiment,
+        name="analyze_conversation_sentiment",
+    ),
+    path(
+        "api/live/key-moments/", views.identify_key_moments, name="identify_key_moments"
+    ),
+    path(
+        "api/live/questions/",
+        views.generate_question_suggestions,
+        name="generate_question_suggestions",
+    ),
+    path(
+        "api/live/end-session/",
+        views.end_live_meeting_session,
+        name="end_live_meeting_session",
+    ),
+    path(
+        "api/live/status/",
+        views.get_live_meeting_status,
+        name="get_live_meeting_status",
+    ),
+    # AI Meeting Guidance endpoints
+    path("api/live/guidance/", views.get_meeting_guidance, name="get_meeting_guidance"),
+    path(
+        "api/live/objection-handling/", views.handle_objection, name="handle_objection"
+    ),
+    path(
+        "api/live/closing-opportunities/",
+        views.identify_closing_opportunity,
+        name="identify_closing_opportunity",
+    ),
+    path(
+        "api/live/follow-up-recommendations/",
+        views.get_follow_up_recommendations,
+        name="get_follow_up_recommendations",
+    ),
+    path(
+        "api/live/intervention-alerts/",
+        views.check_intervention_alerts,
+        name="check_intervention_alerts",
+    ),
     # NIA Meeting Scheduler endpoints
-    path('api/nia/available-slots/', views.get_nia_available_slots, name='get_nia_available_slots'),
-    path('api/nia/schedule/', views.schedule_nia_meeting, name='schedule_nia_meeting'),
-    path('api/nia/summary/', views.generate_meeting_summary, name='generate_meeting_summary'),
-    path('api/nia/analytics/', views.get_nia_meeting_analytics, name='get_nia_meeting_analytics'),
-    path('api/nia/meeting-types/', views.get_nia_meeting_types, name='get_nia_meeting_types'),
-    path('api/nia/dashboard/', views.nia_meeting_dashboard, name='nia_meeting_dashboard'),
+    path(
+        "api/nia/available-slots/",
+        views.get_nia_available_slots,
+        name="get_nia_available_slots",
+    ),
+    path("api/nia/schedule/", views.schedule_nia_meeting, name="schedule_nia_meeting"),
+    path(
+        "api/nia/summary/",
+        views.generate_meeting_summary,
+        name="generate_meeting_summary",
+    ),
+    path(
+        "api/nia/analytics/",
+        views.get_nia_meeting_analytics,
+        name="get_nia_meeting_analytics",
+    ),
+    path(
+        "api/nia/meeting-types/",
+        views.get_nia_meeting_types,
+        name="get_nia_meeting_types",
+    ),
+    path(
+        "api/nia/dashboard/", views.nia_meeting_dashboard, name="nia_meeting_dashboard"
+    ),
+    # AI Question Generation endpoints
+    path(
+        "api/meetings/<uuid:meeting_id>/questions/generate/",
+        views.generate_meeting_questions,
+        name="generate_meeting_questions",
+    ),
+    path(
+        "api/meetings/<uuid:meeting_id>/questions/",
+        views.get_meeting_questions,
+        name="get_meeting_questions",
+    ),
+    path(
+        "api/questions/<uuid:question_id>/mark-asked/",
+        views.mark_question_asked,
+        name="mark_question_asked",
+    ),
+    path(
+        "api/questions/<uuid:question_id>/effectiveness/",
+        views.update_question_effectiveness,
+        name="update_question_effectiveness",
+    ),
+    # Admin action endpoints
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/start/",
+        views.start_meeting_admin,
+        name="start_meeting_admin",
+    ),
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/complete/",
+        views.complete_meeting_admin,
+        name="complete_meeting_admin",
+    ),
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/cancel/",
+        views.cancel_meeting_admin,
+        name="cancel_meeting_admin",
+    ),
+    path(
+        "admin/meeting_service/meeting/add/",
+        views.create_meeting_admin,
+        name="create_meeting_admin",
+    ),
+    # Admin question management endpoints
+    path(
+        "admin/meeting_service/meetingquestion/<uuid:question_id>/mark_asked/",
+        views.mark_question_asked,
+        name="admin_mark_question_asked",
+    ),
+    path(
+        "admin/meeting_service/meetingquestion/<uuid:question_id>/toggle_override/",
+        views.toggle_question_override,
+        name="admin_toggle_question_override",
+    ),
+    path(
+        "admin/meeting_service/meetingquestion/<uuid:question_id>/update_effectiveness/",
+        views.update_question_effectiveness,
+        name="admin_update_question_effectiveness",
+    ),
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/generate_questions/",
+        views.generate_meeting_questions,
+        name="admin_generate_meeting_questions",
+    ),
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/regenerate_questions/",
+        views.regenerate_meeting_questions,
+        name="admin_regenerate_meeting_questions",
+    ),
+    path(
+        "admin/meeting_service/meetingquestion/bulk_update_priority/",
+        views.bulk_update_question_priority,
+        name="admin_bulk_update_question_priority",
+    ),
+    path(
+        "admin/meeting_service/meetingquestion/export_analytics/",
+        views.export_question_analytics,
+        name="admin_export_question_analytics",
+    ),
+    # Admin question template endpoints
+    path(
+        "admin/meeting_service/questiontemplate/<uuid:template_id>/test/",
+        views.question_template_test,
+        name="admin_question_template_test",
+    ),
+    path(
+        "admin/meeting_service/questiontemplate/<uuid:template_id>/duplicate/",
+        views.duplicate_question_template,
+        name="admin_duplicate_question_template",
+    ),
+    path(
+        "admin/meeting_service/questiontemplate/<uuid:template_id>/analytics/",
+        views.question_template_analytics,
+        name="admin_question_template_analytics",
+    ),
+    # Video Platform Integration endpoints
+    path(
+        "api/video/meetings/create-with-agenda/",
+        views.create_meeting_with_agenda,
+        name="create_meeting_with_agenda",
+    ),
+    path(
+        "api/video/meetings/<uuid:meeting_id>/recordings/",
+        views.get_meeting_recordings_unified,
+        name="get_meeting_recordings_unified",
+    ),
+    path(
+        "api/video/meetings/<uuid:meeting_id>/transcripts/",
+        views.get_meeting_transcripts_unified,
+        name="get_meeting_transcripts_unified",
+    ),
+    path(
+        "api/video/meetings/<uuid:meeting_id>/share-link/",
+        views.share_meeting_link,
+        name="share_meeting_link",
+    ),
+    path(
+        "api/video/meetings/<uuid:meeting_id>/generate-link/",
+        views.generate_meeting_link,
+        name="generate_meeting_link",
+    ),
+    path(
+        "api/video/meetings/<uuid:meeting_id>/enable-recording/",
+        views.enable_meeting_recording,
+        name="enable_meeting_recording",
+    ),
+    path(
+        "api/video/capabilities/",
+        views.get_platform_capabilities,
+        name="get_platform_capabilities",
+    ),
+    path(
+        "api/video/meetings/create-automated/",
+        views.create_automated_meeting,
+        name="create_automated_meeting",
+    ),
+    path(
+        "api/video/analytics/",
+        views.get_video_platform_analytics,
+        name="get_video_platform_analytics",
+    ),
+    # Pre-Meeting Intelligence endpoints
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/generate_intelligence/",
+        views.generate_meeting_intelligence,
+        name="admin_generate_meeting_intelligence",
+    ),
+    path(
+        "admin/meeting_service/meeting/<uuid:meeting_id>/update_status/",
+        views.update_meeting_status,
+        name="admin_update_meeting_status",
+    ),
+    # Meeting Outcome Tracking API endpoints
+    path(
+        "api/meetings/<uuid:meeting_id>/outcomes/summary/",
+        views.generate_meeting_summary,
+        name="generate_meeting_summary",
+    ),
+    path(
+        "api/meetings/<uuid:meeting_id>/outcomes/action-items/",
+        views.extract_action_items,
+        name="extract_action_items",
+    ),
+    path(
+        "api/meetings/<uuid:meeting_id>/outcomes/follow-up/",
+        views.schedule_follow_up_actions,
+        name="schedule_follow_up_actions",
+    ),
+    path(
+        "api/meetings/<uuid:meeting_id>/outcomes/scoring/",
+        views.update_lead_scoring,
+        name="update_lead_scoring",
+    ),
+    path(
+        "api/meetings/<uuid:meeting_id>/outcomes/complete/",
+        views.process_complete_meeting_outcome,
+        name="process_complete_meeting_outcome",
+    ),
+    path(
+        "api/meetings/<uuid:meeting_id>/outcomes/status/",
+        views.get_meeting_outcome_status,
+        name="get_meeting_outcome_status",
+    ),
+    path(
+        "api/meetings/outcomes/dashboard/",
+        views.get_meeting_outcomes_dashboard,
+        name="get_meeting_outcomes_dashboard",
+    ),
+    # Admin AJAX endpoints for meeting outcome tracking
+    path(
+        "admin/meeting_service/meeting/generate_summary/",
+        views.admin_generate_meeting_summary,
+        name="admin_generate_meeting_summary",
+    ),
+    path(
+        "admin/meeting_service/meeting/extract_action_items/",
+        views.admin_extract_action_items,
+        name="admin_extract_action_items",
+    ),
+    path(
+        "admin/meeting_service/meeting/schedule_follow_up/",
+        views.admin_schedule_follow_up,
+        name="admin_schedule_follow_up",
+    ),
+    path(
+        "admin/meeting_service/meeting/update_lead_scoring/",
+        views.admin_update_lead_scoring,
+        name="admin_update_lead_scoring",
+    ),
+    path(
+        "admin/meeting_service/meeting/process_complete_outcome/",
+        views.admin_process_complete_outcome,
+        name="admin_process_complete_outcome",
+    ),
+    # Meeting Dashboard URLs
+    path(
+        "admin/dashboard/",
+        dashboard_views.meeting_dashboard_view,
+        name="meeting_admin_dashboard",
+    ),
+    path(
+        "admin/dashboard/metrics/",
+        dashboard_views.dashboard_metrics_api,
+        name="dashboard_metrics_api",
+    ),
+    path(
+        "admin/dashboard/upcoming/",
+        dashboard_views.dashboard_upcoming_meetings_api,
+        name="dashboard_upcoming_meetings_api",
+    ),
+    path(
+        "admin/dashboard/performance/",
+        dashboard_views.dashboard_performance_metrics_api,
+        name="dashboard_performance_metrics_api",
+    ),
+    path(
+        "admin/dashboard/ai-effectiveness/",
+        dashboard_views.dashboard_ai_effectiveness_api,
+        name="dashboard_ai_effectiveness_api",
+    ),
+    path(
+        "admin/dashboard/conversion/",
+        dashboard_views.dashboard_conversion_analytics_api,
+        name="dashboard_conversion_analytics_api",
+    ),
+    # Calendar Integration endpoints
+    path(
+        "api/calendar/auth-urls/",
+        calendar_views.get_calendar_authorization_urls,
+        name="get_calendar_authorization_urls",
+    ),
+    path(
+        "oauth/google/calendar/callback/",
+        calendar_views.google_calendar_oauth_callback,
+        name="google_calendar_oauth_callback",
+    ),
+    path(
+        "oauth/outlook/calendar/callback/",
+        calendar_views.outlook_calendar_oauth_callback,
+        name="outlook_calendar_oauth_callback",
+    ),
+    path(
+        "api/calendar/events/",
+        calendar_views.get_calendar_events,
+        name="get_calendar_events",
+    ),
+    path(
+        "api/calendar/conflicts/",
+        calendar_views.detect_meeting_conflicts,
+        name="detect_meeting_conflicts",
+    ),
+    path(
+        "api/calendar/available-slots/",
+        calendar_views.find_available_time_slots,
+        name="find_available_time_slots",
+    ),
+    path(
+        "api/calendar/schedule-meeting/",
+        calendar_views.schedule_meeting_with_lead,
+        name="schedule_meeting_with_lead",
+    ),
+    path(
+        "api/calendar/schedule-reminders/",
+        calendar_views.schedule_meeting_reminders,
+        name="schedule_meeting_reminders",
+    ),
+    path(
+        "api/calendar/sync-status/",
+        calendar_views.get_calendar_sync_status,
+        name="get_calendar_sync_status",
+    ),
+    path(
+        "api/calendar/dashboard/",
+        calendar_views.calendar_integration_dashboard,
+        name="calendar_integration_dashboard",
+    ),
+    path(
+        "api/calendar/send-invitation/",
+        calendar_views.send_meeting_invitation,
+        name="send_meeting_invitation",
+    ),
 ]

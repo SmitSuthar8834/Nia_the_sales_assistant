@@ -1,0 +1,115 @@
+{% load static %}
+
+<div class="user-management-widget" style="margin: 10px 0;">
+    <div class="widget-header" style="background: linear-gradient(90deg, #2C3E50 0%, #4ECDC4 100%); color: white; padding: 10px; border-radius: 4px 4px 0 0;">
+        <div style="display: flex; align-items: center;">
+            <img src="{% static 'images/nia-logo.jpg' %}" alt="NIA Logo" class="nia-logo-small" style="height: 25px; width: auto; margin-right: 10px; filter: brightness(0) invert(1);">
+            <h4 style="margin: 0;">User Management</h4>
+        </div>
+    </div>
+    
+    <div class="widget-body" style="border: 1px solid #ddd; border-top: none; padding: 15px; background: #f8f9fa;">
+        {% if user_stats %}
+            <div class="user-stats" style="margin-bottom: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                    <div style="text-align: center; background: white; padding: 10px; border-radius: 4px; border-left: 4px solid #0073aa;">
+                        <div style="font-size: 24px; font-weight: bold; color: #0073aa;">{{ user_stats.total_users }}</div>
+                        <div style="font-size: 12px; color: #666;">Total Users</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 10px; border-radius: 4px; border-left: 4px solid #28a745;">
+                        <div style="font-size: 24px; font-weight: bold; color: #28a745;">{{ user_stats.active_users }}</div>
+                        <div style="font-size: 12px; color: #666;">Active Users</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 10px; border-radius: 4px; border-left: 4px solid #17a2b8;">
+                        <div style="font-size: 24px; font-weight: bold; color: #17a2b8;">{{ user_stats.sales_reps }}</div>
+                        <div style="font-size: 12px; color: #666;">Sales Reps</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 10px; border-radius: 4px; border-left: 4px solid #ffc107;">
+                        <div style="font-size: 24px; font-weight: bold; color: #ffc107;">{{ user_stats.managers }}</div>
+                        <div style="font-size: 12px; color: #666;">Managers</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="user-actions">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <a href="/admin/users/user/add/" 
+                   class="button" 
+                   style="background: #0073aa; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                    ➕ Add New User
+                </a>
+                
+                <a href="/admin/users/user/" 
+                   class="button" 
+                   style="background: #28a745; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                    👥 Manage Users
+                </a>
+                
+                <a href="/admin/auth/group/" 
+                   class="button" 
+                   style="background: #17a2b8; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                    🔐 Manage Groups
+                </a>
+                
+                <a href="/admin/auth/permission/" 
+                   class="button" 
+                   style="background: #6c757d; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                    🛡️ Permissions
+                </a>
+            </div>
+        </div>
+        
+        {% if recent_users %}
+            <div class="recent-users">
+                <div style="font-weight: bold; margin-bottom: 10px; color: #333;">📋 Recent Users</div>
+                <div style="background: white; border-radius: 4px; overflow: hidden;">
+                    {% for user in recent_users %}
+                        <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: bold;">{{ user.full_name }}</div>
+                                <div style="font-size: 12px; color: #666;">
+                                    {{ user.get_role_display }} | 
+                                    {% if user.is_active %}
+                                        <span style="color: #28a745;">Active</span>
+                                    {% else %}
+                                        <span style="color: #dc3545;">Inactive</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">
+                                {% if user.last_login %}
+                                    Last login: {{ user.last_login|timesince }} ago
+                                {% else %}
+                                    Never logged in
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if not user_stats and not recent_users %}
+            <div style="text-align: center; padding: 20px; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👥</div>
+                <div>No user data available</div>
+                <div style="margin-top: 10px;">
+                    <a href="/admin/users/user/add/" 
+                       class="button" 
+                       style="background: #0073aa; color: white; padding: 8px 12px; text-decoration: none; border-radius: 3px;">
+                        ➕ Create First User
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.user-management-widget .button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+</style>

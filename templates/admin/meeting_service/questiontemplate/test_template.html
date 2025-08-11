@@ -1,0 +1,207 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Test Question Template - {{ template.name }}{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/question_template_admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="question-template-admin">
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a>
+        &rsaquo; <a href="{% url 'admin:meeting_service_questiontemplate_changelist' %}">Question Templates</a>
+        &rsaquo; <a href="{% url 'admin:meeting_service_questiontemplate_change' template.id %}">{{ template.name }}</a>
+        &rsaquo; Test Template
+    </div>
+
+    <h1>Test Question Template: {{ template.name }}</h1>
+
+    <div class="template-info">
+        <div class="form-row">
+            <div class="form-group">
+                <strong>Industry:</strong> {{ template.industry|title }}
+            </div>
+            <div class="form-group">
+                <strong>Meeting Type:</strong> {{ template.get_template_type_display }}
+            </div>
+            <div class="form-group">
+                <strong>Category:</strong> {{ template.get_question_category_display }}
+            </div>
+        </div>
+    </div>
+
+    <div class="template-preview">
+        <h3>🧪 Template Test Results</h3>
+        
+        <div class="test-question-container">
+            <h4>Generated Question:</h4>
+            <div class="preview-question">
+                "{{ test_question }}"
+            </div>
+        </div>
+
+        <div class="sample-data-container">
+            <h4>Sample Data Used:</h4>
+            <div class="sample-data-grid">
+                {% for key, value in sample_data.items %}
+                <div class="sample-data-item">
+                    <strong>{{ key|title }}:</strong> {{ value }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if variables %}
+        <div class="template-variables">
+            <h4>Available Variables:</h4>
+            <div class="variable-list">
+                {% for variable in variables %}
+                <span class="variable-tag">{​{ {{ variable }} }​}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="template-analysis">
+        <h3>📊 Template Analysis</h3>
+        
+        <div class="analytics-grid">
+            <div class="analytics-card">
+                <h4>{{ template.usage_count }}</h4>
+                <small>Times Used</small>
+            </div>
+            <div class="analytics-card {% if template.success_rate >= 70 %}high-performance{% elif template.success_rate >= 50 %}medium-performance{% else %}low-performance{% endif %}">
+                <h4>{{ template.success_rate|floatformat:1 }}%</h4>
+                <small>Success Rate</small>
+            </div>
+            <div class="analytics-card">
+                <h4>{{ template.confidence_score|floatformat:1 }}%</h4>
+                <small>AI Confidence</small>
+            </div>
+            <div class="analytics-card">
+                <h4>{{ template.priority }}</h4>
+                <small>Priority Level</small>
+            </div>
+        </div>
+
+        <div class="template-rationale">
+            <h4>Template Rationale:</h4>
+            <p>{{ template.rationale }}</p>
+        </div>
+
+        {% if template.expected_responses %}
+        <div class="expected-responses">
+            <h4>Expected Response Patterns:</h4>
+            <ul>
+                {% for response in template.expected_responses %}
+                <li>{{ response }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if template.follow_up_triggers %}
+        <div class="follow-up-triggers">
+            <h4>Follow-up Triggers:</h4>
+            <ul>
+                {% for trigger in template.follow_up_triggers %}
+                <li>{{ trigger }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="optimization-recommendations">
+        <h3>💡 Optimization Recommendations</h3>
+        
+        {% if template.success_rate >= 70 %}
+        <div class="recommendation-item high-priority">
+            <strong>✅ High Performance:</strong> This template is performing excellently! Consider using it as a baseline for similar templates.
+        </div>
+        {% elif template.success_rate >= 50 %}
+        <div class="recommendation-item medium-priority">
+            <strong>⚠️ Moderate Performance:</strong> This template has room for improvement. Consider A/B testing variations.
+        </div>
+        {% else %}
+        <div class="recommendation-item low-priority">
+            <strong>❌ Needs Improvement:</strong> This template requires significant revision. Review the question text and targeting.
+        </div>
+        {% endif %}
+
+        <div class="recommendation-item">
+            <strong>Suggested Actions:</strong>
+            <ul>
+                <li>Test the question with different variable combinations</li>
+                <li>Review recent responses for improvement opportunities</li>
+                <li>Consider industry-specific customizations</li>
+                <li>Analyze follow-up trigger effectiveness</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="admin-action-buttons">
+        <a href="{% url 'admin:meeting_service_questiontemplate_change' template.id %}" class="button button-primary">
+            ✏️ Edit Template
+        </a>
+        <a href="{% url 'admin:meeting_service_questiontemplate_changelist' %}" class="button button-secondary">
+            📋 Back to Templates
+        </a>
+        <button onclick="window.print()" class="button button-success">
+            🖨️ Print Test Results
+        </button>
+        <button onclick="window.close()" class="button button-warning">
+            ❌ Close Window
+        </button>
+    </div>
+</div>
+
+<style>
+.sample-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.sample-data-item {
+    background: white;
+    padding: 8px;
+    border-radius: 3px;
+    border-left: 3px solid #007cba;
+}
+
+.test-question-container {
+    margin-bottom: 20px;
+}
+
+.template-rationale,
+.expected-responses,
+.follow-up-triggers {
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.template-rationale h4,
+.expected-responses h4,
+.follow-up-triggers h4 {
+    margin-top: 0;
+    color: #495057;
+}
+
+@media print {
+    .admin-action-buttons {
+        display: none;
+    }
+    
+    .breadcrumbs {
+        display: none;
+    }
+}
+</style>
+{% endblock %}

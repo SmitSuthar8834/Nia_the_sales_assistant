@@ -1,29 +1,109 @@
 version: '3.8'
 
+# NIA Sales Assistant Docker Compose Configuration
+# This file defines the infrastructure services needed for the application
+
 services:
+  # PostgreSQL Database Service
   postgres:
     image: postgres:15
+    container_name: nia_postgres
     environment:
-      POSTGRES_DB: nia_sales_assistant
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      # Database configuration - customize these values for production
+      POSTGRES_DB: ${DB_NAME:-nia_sales_assistant}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - nia_network
 
+  # Redis Service (for Celery and Django Channels)
   redis:
     image: redis:7-alpine
+    container_name: nia_redis
     ports:
       - "6380:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - nia_network
+    # Enable Redis persistence
+    command: redis-server --appendonly yes
 
+  # Django Application Service (uncomment for full containerization)
+  # web:
+  #   build: .
+  #   container_name: nia_web
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DEBUG=${DEBUG:-True}
+  #     - SECRET_KEY=${SECRET_KEY}
+  #     - DB_NAME=${DB_NAME:-nia_sales_assistant}
+  #     - DB_USER=${DB_USER:-postgres}
+  #     - DB_PASSWORD=${DB_PASSWORD:-password}
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - nia_network
+
+  # Celery Worker Service (uncomment when using background tasks)
+  # celery:
+  #   build: .
+  #   container_name: nia_celery
+  #   command: celery -A nia_sales_assistant worker -l info
+  #   environment:
+  #     - DEBUG=${DEBUG:-True}
+  #     - SECRET_KEY=${SECRET_KEY}
+  #     - DB_NAME=${DB_NAME:-nia_sales_assistant}
+  #     - DB_USER=${DB_USER:-postgres}
+  #     - DB_PASSWORD=${DB_PASSWORD:-password}
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - nia_network
+
+# Named volumes for data persistence
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  nia_network:
+    driver: bridge

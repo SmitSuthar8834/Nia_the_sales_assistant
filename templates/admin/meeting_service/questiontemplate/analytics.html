@@ -1,0 +1,416 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Template Analytics - {{ template.name }}{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/question_template_admin.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="question-template-admin">
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a>
+        &rsaquo; <a href="{% url 'admin:meeting_service_questiontemplate_changelist' %}">Question Templates</a>
+        &rsaquo; <a href="{% url 'admin:meeting_service_questiontemplate_change' template.id %}">{{ template.name }}</a>
+        &rsaquo; Analytics
+    </div>
+
+    <h1>📊 Template Analytics: {{ template.name }}</h1>
+
+    <div class="template-info">
+        <div class="form-row">
+            <div class="form-group">
+                <strong>Industry:</strong> {{ template.industry|title }}
+            </div>
+            <div class="form-group">
+                <strong>Meeting Type:</strong> {{ template.get_template_type_display }}
+            </div>
+            <div class="form-group">
+                <strong>Category:</strong> {{ template.get_question_category_display }}
+            </div>
+            <div class="form-group">
+                <strong>Status:</strong> 
+                <span class="template-status">
+                    <span class="status-indicator {% if template.is_active %}active{% else %}inactive{% endif %}"></span>
+                    {% if template.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="performance-analytics">
+        <h3>📈 Performance Overview</h3>
+        
+        <div class="analytics-grid">
+            <div class="analytics-card">
+                <h4>{{ total_questions }}</h4>
+                <small>Total Questions Generated</small>
+            </div>
+            <div class="analytics-card">
+                <h4>{{ asked_questions }}</h4>
+                <small>Questions Asked</small>
+            </div>
+            <div class="analytics-card">
+                <h4>{{ effective_questions }}</h4>
+                <small>Effective Questions (70%+)</small>
+            </div>
+            <div class="analytics-card {% if avg_effectiveness >= 70 %}high-performance{% elif avg_effectiveness >= 50 %}medium-performance{% else %}low-performance{% endif %}">
+                <h4>{{ avg_effectiveness|floatformat:1 }}%</h4>
+                <small>Average Effectiveness</small>
+            </div>
+            <div class="analytics-card">
+                <h4>{{ template.usage_count }}</h4>
+                <small>Template Usage Count</small>
+            </div>
+            <div class="analytics-card {% if template.success_rate >= 70 %}high-performance{% elif template.success_rate >= 50 %}medium-performance{% else %}low-performance{% endif %}">
+                <h4>{{ template.success_rate|floatformat:1 }}%</h4>
+                <small>Template Success Rate</small>
+            </div>
+        </div>
+
+        {% if total_questions > 0 %}
+        <div class="usage-rate-chart">
+            <h4>Usage Rate Analysis</h4>
+            <canvas id="usageRateChart" width="400" height="200"></canvas>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if performance_by_type %}
+    <div class="performance-by-type">
+        <h3>📋 Performance by Meeting Type</h3>
+        <div class="performance-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Meeting Type</th>
+                        <th>Questions Generated</th>
+                        <th>Average Effectiveness</th>
+                        <th>Performance Tier</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in performance_by_type %}
+                    <tr>
+                        <td>{{ item.meeting__meeting_type|title }}</td>
+                        <td>{{ item.count }}</td>
+                        <td>
+                            {% if item.avg_effectiveness %}
+                                <span class="{% if item.avg_effectiveness >= 70 %}success-rate-high{% elif item.avg_effectiveness >= 50 %}success-rate-medium{% else %}success-rate-low{% endif %}">
+                                    {{ item.avg_effectiveness|floatformat:1 }}%
+                                </span>
+                            {% else %}
+                                <span class="success-rate-no-data">No data</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.avg_effectiveness >= 70 %}
+                                <span style="color: #28a745;">🟢 High</span>
+                            {% elif item.avg_effectiveness >= 50 %}
+                                <span style="color: #ffc107;">🟡 Medium</span>
+                            {% else %}
+                                <span style="color: #dc3545;">🔴 Low</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if recent_questions %}
+    <div class="recent-questions">
+        <h3>🕒 Recent Questions Generated</h3>
+        <div class="questions-list">
+            {% for question in recent_questions %}
+            <div class="question-item">
+                <div class="question-header">
+                    <strong>{{ question.meeting.title }}</strong>
+                    <span class="question-date">{{ question.created_at|date:"M d, Y H:i" }}</span>
+                </div>
+                <div class="question-text">
+                    {{ question.question_text|truncatechars:150 }}
+                </div>
+                <div class="question-meta">
+                    <span class="question-type">{{ question.get_question_type_display }}</span>
+                    <span class="question-priority">Priority: {{ question.priority }}</span>
+                    {% if question.effectiveness_score %}
+                    <span class="effectiveness-score {% if question.effectiveness_score >= 70 %}high{% elif question.effectiveness_score >= 50 %}medium{% else %}low{% endif %}">
+                        Effectiveness: {{ question.effectiveness_score|floatformat:1 }}%
+                    </span>
+                    {% endif %}
+                    {% if question.asked_at %}
+                    <span class="asked-status asked">✅ Asked</span>
+                    {% else %}
+                    <span class="asked-status not-asked">⏳ Not Asked</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="optimization-insights">
+        <h3>💡 Optimization Insights</h3>
+        
+        <div class="insights-grid">
+            <div class="insight-card">
+                <h4>Template Performance</h4>
+                {% if template.success_rate >= 70 %}
+                <p class="insight-positive">✅ This template is performing excellently with a {{ template.success_rate|floatformat:1 }}% success rate.</p>
+                <ul>
+                    <li>Consider using this template as a baseline for similar scenarios</li>
+                    <li>Document what makes this template successful</li>
+                    <li>Share best practices with the team</li>
+                </ul>
+                {% elif template.success_rate >= 50 %}
+                <p class="insight-warning">⚠️ This template has moderate performance with room for improvement.</p>
+                <ul>
+                    <li>A/B test variations of the question text</li>
+                    <li>Review targeting criteria and filters</li>
+                    <li>Analyze response patterns for optimization opportunities</li>
+                </ul>
+                {% else %}
+                <p class="insight-danger">❌ This template needs significant improvement.</p>
+                <ul>
+                    <li>Review and rewrite the question text</li>
+                    <li>Reconsider the question category and timing</li>
+                    <li>Test with different industries or meeting types</li>
+                </ul>
+                {% endif %}
+            </div>
+
+            <div class="insight-card">
+                <h4>Usage Patterns</h4>
+                {% if total_questions > 0 %}
+                <p>This template has generated {{ total_questions }} question{{ total_questions|pluralize }} with {{ asked_questions }} being asked in meetings.</p>
+                <ul>
+                    <li>Ask rate: {{ asked_questions|div:total_questions|mul:100|floatformat:1 }}%</li>
+                    <li>Most effective in {{ template.get_template_type_display|lower }} meetings</li>
+                    <li>Best suited for {{ template.industry|title }} industry</li>
+                </ul>
+                {% else %}
+                <p class="insight-neutral">This template hasn't been used yet. Consider promoting its usage or reviewing its targeting criteria.</p>
+                {% endif %}
+            </div>
+
+            <div class="insight-card">
+                <h4>Recommendations</h4>
+                <ul>
+                    {% if template.usage_count < 5 %}
+                    <li>Increase template usage to gather more performance data</li>
+                    {% endif %}
+                    {% if avg_effectiveness < 60 %}
+                    <li>Review and improve question wording for better engagement</li>
+                    {% endif %}
+                    {% if asked_questions < total_questions|div:2 %}
+                    <li>Questions generated but not asked - review meeting flow</li>
+                    {% endif %}
+                    <li>Monitor effectiveness trends over time</li>
+                    <li>Compare performance with similar templates</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-action-buttons">
+        <a href="{% url 'admin:meeting_service_questiontemplate_change' template.id %}" class="button button-primary">
+            ✏️ Edit Template
+        </a>
+        <a href="{% url 'admin_duplicate_question_template' template.id %}" class="button button-success">
+            📋 Duplicate Template
+        </a>
+        <a href="{% url 'admin:meeting_service_questiontemplate_changelist' %}" class="button button-secondary">
+            📋 Back to Templates
+        </a>
+        <button onclick="exportAnalytics()" class="button button-warning">
+            📊 Export Analytics
+        </button>
+        <button onclick="window.print()" class="button button-success">
+            🖨️ Print Report
+        </button>
+    </div>
+</div>
+
+<style>
+.performance-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.performance-table th,
+.performance-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.performance-table th {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+
+.questions-list {
+    background: white;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.question-item {
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.question-item:last-child {
+    border-bottom: none;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.question-date {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.question-text {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.question-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+}
+
+.question-meta span {
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #f8f9fa;
+}
+
+.effectiveness-score.high {
+    background: #d4edda;
+    color: #155724;
+}
+
+.effectiveness-score.medium {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.effectiveness-score.low {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.asked-status.asked {
+    background: #d4edda;
+    color: #155724;
+}
+
+.asked-status.not-asked {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.insight-card {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.insight-card h4 {
+    margin-top: 0;
+    color: #495057;
+}
+
+.insight-positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.insight-warning {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.insight-danger {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.insight-neutral {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.usage-rate-chart {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+@media print {
+    .admin-action-buttons {
+        display: none;
+    }
+    
+    .breadcrumbs {
+        display: none;
+    }
+}
+</style>
+
+<script>
+{% if total_questions > 0 %}
+// Usage Rate Chart
+const ctx = document.getElementById('usageRateChart').getContext('2d');
+const usageRateChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Questions Asked', 'Questions Not Asked'],
+        datasets: [{
+            data: [{{ asked_questions }}, {{ total_questions|sub:asked_questions }}],
+            backgroundColor: ['#28a745', '#6c757d'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+{% endif %}
+
+function exportAnalytics() {
+    // This would implement analytics export functionality
+    alert('Analytics export functionality coming soon!');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}Schedule Meeting with {{ lead.company_name }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.schedule-form {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-row {
+    margin-bottom: 15px;
+}
+
+.form-row label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-row input, .form-row textarea, .form-row select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-row textarea {
+    height: 80px;
+    resize: vertical;
+}
+
+.available-slots {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.slot-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.slot-item:hover {
+    background: #e3f2fd;
+}
+
+.slot-item.selected {
+    background: #2196f3;
+    color: white;
+    border-color: #1976d2;
+}
+
+.slot-time {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.slot-confidence {
+    font-size: 12px;
+    color: #666;
+}
+
+.slot-item.selected .slot-confidence {
+    color: #e3f2fd;
+}
+
+.submit-button {
+    background: #28a745;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.submit-button:hover {
+    background: #218838;
+}
+
+.lead-info {
+    background: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-main">
+    <h1>Schedule Meeting with {{ lead.company_name }}</h1>
+    
+    <div class="lead-info">
+        <h3>Lead Information</h3>
+        <p><strong>Company:</strong> {{ lead.company_name }}</p>
+        <p><strong>Contact:</strong> {{ lead.contact_name|default:"N/A" }}</p>
+        <p><strong>Email:</strong> {{ lead.contact_email|default:"N/A" }}</p>
+        <p><strong>Status:</strong> {{ lead.get_status_display }}</p>
+        {% if lead.pain_points %}
+        <p><strong>Pain Points:</strong> {{ lead.pain_points|join:", " }}</p>
+        {% endif %}
+    </div>
+    
+    <form method="post" class="schedule-form">
+        {% csrf_token %}
+        
+        <div class="form-row">
+            <label for="title">Meeting Title:</label>
+            <input type="text" id="title" name="title" 
+                   value="Meeting with {{ lead.company_name }}" required>
+        </div>
+        
+        <div class="form-row">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" 
+                      placeholder="Meeting agenda and objectives..."></textarea>
+        </div>
+        
+        <div class="form-row">
+            <label for="duration_minutes">Duration (minutes):</label>
+            <select id="duration_minutes" name="duration_minutes">
+                <option value="30">30 minutes</option>
+                <option value="60" selected>1 hour</option>
+                <option value="90">1.5 hours</option>
+                <option value="120">2 hours</option>
+            </select>
+        </div>
+        
+        <div class="form-row">
+            <label for="attendee_emails">Attendee Emails (comma-separated):</label>
+            <input type="text" id="attendee_emails" name="attendee_emails" 
+                   value="{{ lead.contact_email|default:'' }}"
+                   placeholder="email1@company.com, email2@company.com">
+        </div>
+        
+        <div class="form-row">
+            <label for="preferred_start_time">Preferred Start Time (optional):</label>
+            <input type="datetime-local" id="preferred_start_time" name="preferred_start_time">
+        </div>
+        
+        {% if available_slots %}
+        <div class="available-slots">
+            <h3>Suggested Available Time Slots</h3>
+            <p>Click on a time slot to select it as your preferred time:</p>
+            
+            {% for slot in available_slots %}
+            <div class="slot-item" data-start-time="{{ slot.start_time.isoformat }}">
+                <div class="slot-time">
+                    {{ slot.start_time|date:"l, F j, Y" }} at {{ slot.start_time|date:"g:i A" }}
+                </div>
+                <div class="slot-confidence">
+                    Confidence: {{ slot.confidence_score|floatformat:0 }}% 
+                    ({{ slot.duration_minutes }} minutes)
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-row">
+            <button type="submit" class="submit-button">Schedule Meeting</button>
+            <a href="{% url 'admin:ai_service_lead_changelist' %}" 
+               style="margin-left: 10px; padding: 12px 24px; text-decoration: none; 
+                      background: #6c757d; color: white; border-radius: 4px;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slotItems = document.querySelectorAll('.slot-item');
+    const preferredTimeInput = document.getElementById('preferred_start_time');
+    
+    slotItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+            // Remove selected class from all items
+            slotItems.forEach(function(slot) {
+                slot.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked item
+            this.classList.add('selected');
+            
+            // Set the preferred time input
+            const startTime = this.getAttribute('data-start-time');
+            if (startTime) {
+                // Convert ISO string to datetime-local format
+                const date = new Date(startTime);
+                const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                    .toISOString().slice(0, 16);
+                preferredTimeInput.value = localDateTime;
+            }
+        });
+    });
+    
+    // Set minimum datetime to current time
+    const now = new Date();
+    const minDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 16);
+    preferredTimeInput.min = minDateTime;
+});
+</script>
+{% endblock %}
